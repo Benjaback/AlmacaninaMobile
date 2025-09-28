@@ -15,8 +15,36 @@ export default function SignUp({ navigation }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignUp = async () => {
-    if (!firstName || !lastName || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Todos los campos son obligatorios.");
+    if (!firstName.trim()) {
+      Alert.alert("Error", "El campo Nombre no está completado.");
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(firstName)) {
+      Alert.alert("Error", "El nombre solo puede contener letras y espacios.");
+      return;
+    }
+
+    if (!lastName.trim()) {
+      Alert.alert("Error", "El campo Apellido no está completado.");
+      return;
+    }
+    if (!/^[a-zA-Z\s]+$/.test(lastName)) {
+      Alert.alert("Error", "El apellido solo puede contener letras y espacios.");
+      return;
+    }
+
+    if (!email.trim()) {
+      Alert.alert("Error", "El campo Correo no está completado.");
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert("Error", "El campo Contraseña no está completado.");
+      return;
+    }
+
+    if (!confirmPassword.trim()) {
+      Alert.alert("Error", "El campo Confirmar Contraseña no está completado.");
       return;
     }
 
@@ -85,7 +113,7 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su nombre"
             value={firstName}
-            onChangeText={setFirstName}
+            onChangeText={(text) => setFirstName(text.replace(/[^a-zA-Z\s]/g, ''))}
           />
         </View>
 
@@ -96,7 +124,7 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su apellido"
             value={lastName}
-            onChangeText={setLastName}
+            onChangeText={(text) => setLastName(text.replace(/[^a-zA-Z\s]/g, ''))}
           />
         </View>
 
