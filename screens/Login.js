@@ -25,7 +25,6 @@ export default function Login({ navigation }) {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Limpiar errores en caso de éxito
       setPasswordError('');
       setEmailError('');
       Toast.show({
@@ -35,7 +34,7 @@ export default function Login({ navigation }) {
       });
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); 
     } catch (error) {
-      // Limpiar errores previos
+
       setPasswordError('');
       setEmailError('');
       
@@ -67,7 +66,6 @@ export default function Login({ navigation }) {
           });
           break;
         default:
-          // Para debug: mostrar el código de error real
           Toast.show({
             type: 'error',
             text1: 'Error de autenticación',
@@ -133,6 +131,9 @@ export default function Login({ navigation }) {
 
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
           <Text style={styles.signUpText}>¿No tienes cuenta aún? Regístrate</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Cambiar')}>
+          <Text style={styles.cambiarText}>Cambiar Contraseña</Text>
         </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
@@ -212,6 +213,11 @@ const styles = StyleSheet.create({
   signUpText: {
     marginTop: 20,
     color: '#007AFF',
+  },
+  cambiarText: {
+    marginTop: 20,
+    color: '#007AFF',
+    textAlign : 'center',
   },
   errorText: {
     color: '#B50000',

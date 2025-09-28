@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { auth } from '../src/config/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import Toast from 'react-native-toast-message';
 
 export default function SignUp({ navigation }) {
   const [firstName, setFirstName] = useState('');
@@ -13,85 +14,117 @@ export default function SignUp({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
   const handleSignUp = async () => {
+  
+    setFirstNameError('');
+    setLastNameError('');
+    setEmailError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
+
+  
     if (!firstName.trim()) {
-      Alert.alert("Error", "El campo Nombre no está completado.");
+      setFirstNameError("El campo Nombre no está completado.");
       return;
     }
     if (!/^[a-zA-Z\s]+$/.test(firstName)) {
-      Alert.alert("Error", "El nombre solo puede contener letras y espacios.");
+      setFirstNameError("El nombre solo puede contener letras y espacios.");
       return;
     }
 
+  
     if (!lastName.trim()) {
-      Alert.alert("Error", "El campo Apellido no está completado.");
+      setLastNameError("El campo Apellido no está completado.");
       return;
     }
     if (!/^[a-zA-Z\s]+$/.test(lastName)) {
-      Alert.alert("Error", "El apellido solo puede contener letras y espacios.");
+      setLastNameError("El apellido solo puede contener letras y espacios.");
       return;
     }
 
     if (!email.trim()) {
-      Alert.alert("Error", "El campo Correo no está completado.");
+      setEmailError("El campo Correo no está completado.");
       return;
     }
 
     if (!password.trim()) {
-      Alert.alert("Error", "El campo Contraseña no está completado.");
+      setPasswordError("El campo Contraseña no está completado.");
       return;
     }
 
     if (!confirmPassword.trim()) {
-      Alert.alert("Error", "El campo Confirmar Contraseña no está completado.");
+      setConfirmPasswordError("El campo Confirmar Contraseña no está completado.");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden.");
+      setConfirmPasswordError("Las contraseñas no coinciden.");
       return;
     }
 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
-      Alert.alert(
-        "Error",
-        "La contraseña debe tener al menos 6 caracteres, incluyendo una letra mayúscula, una minúscula y un número."
-      );
+      setPasswordError("La contraseña debe tener al menos 6 caracteres, incluyendo una letra mayúscula, una minúscula y un número.");
       return;
     }
 
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert("Registro exitoso", "Usuario registrado con éxito.");
+      Toast.show({
+        type: 'success',
+        text1: 'Registro exitoso',
+        text2: 'Usuario registrado con éxito.'
+      });
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); 
     } catch (error) {
-      let errorMessage = "Hubo un problema al registrar el usuario.";
+      setFirstNameError('');
+      setLastNameError('');
+      setEmailError('');
+      setPasswordError('');
+      setConfirmPasswordError('');
+      
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = "El correo electrónico ya está en uso.";
+          setEmailError("El correo electrónico ya está en uso.");
           break;
         case 'auth/invalid-email':
-          errorMessage = "El formato del correo electrónico no es válido.";
+          setEmailError("El formato del correo electrónico no es válido.");
           break;
         case 'auth/weak-password':
-          errorMessage = "La contraseña es demasiado débil.";
+          setPasswordError("La contraseña es demasiado débil.");
           break;
         case 'auth/network-request-failed':
-          errorMessage = "Error de conexión, por favor intenta más tarde.";
+          Toast.show({
+            type: 'error',
+            text1: 'Error de conexión',
+            text2: 'Por favor intenta más tarde.'
+          });
           break;
+        default:
+          Toast.show({
+            type: 'error',
+            text1: 'Error de registro',
+            text2: `Código: ${error.code}`
+          });
       }
-      Alert.alert("Error", errorMessage);
     }
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/fondoAM.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <>
+      <ImageBackground
+        source={require('../assets/fondoAM.jpg')}
+        style={styles.container}
+        resizeMode="cover"
+      >
       <KeyboardAwareScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -116,6 +149,7 @@ export default function SignUp({ navigation }) {
             onChangeText={(text) => setFirstName(text.replace(/[^a-zA-Z\s]/g, ''))}
           />
         </View>
+        {firstNameError ? <Text style={styles.errorText}>{firstNameError}</Text> : null}
 
         <Text style={styles.label}>Apellido</Text>
         <View style={styles.inputContainer}>
@@ -127,6 +161,7 @@ export default function SignUp({ navigation }) {
             onChangeText={(text) => setLastName(text.replace(/[^a-zA-Z\s]/g, ''))}
           />
         </View>
+        {lastNameError ? <Text style={styles.errorText}>{lastNameError}</Text> : null}
 
         <Text style={styles.label}>Correo</Text>
         <View style={styles.inputContainer}>
@@ -140,6 +175,7 @@ export default function SignUp({ navigation }) {
             autoCapitalize="none"
           />
         </View>
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
         <Text style={styles.label}>Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -155,6 +191,7 @@ export default function SignUp({ navigation }) {
             <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
+        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
         <Text style={styles.label}>Confirmar Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -170,6 +207,7 @@ export default function SignUp({ navigation }) {
             <FontAwesome name={showConfirmPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
+        {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSignUp}>
           <Text style={styles.buttonText}>Registrarse</Text>
@@ -181,6 +219,8 @@ export default function SignUp({ navigation }) {
         </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
+    <Toast />
+    </>
   );
 }
 
@@ -253,6 +293,13 @@ const styles = StyleSheet.create({
   signUpText: {
     marginTop: 20,
     color: '#007AFF',
+  },
+  errorText: {
+    color: '#B50000',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
   },
 });
 
