@@ -30,6 +30,7 @@ function Navigation() {
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
         <Stack.Screen name="Home" component={Home} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

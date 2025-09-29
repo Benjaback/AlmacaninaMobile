@@ -18,7 +18,7 @@ export default function Home({ navigation }) {
   return (
     <View style={styles.container}>
       <Image source={require('../assets/logoAM.png')} style={styles.logo} />
-      <Text style={styles.title}>Bienvenido a la aplicación Ema</Text>
+      <Text style={styles.title}>Bienvenido a la aplicación </Text>
       <TouchableOpacity style={styles.button} onPress={handleLogOut}>
         <Text style={styles.buttonText}>Cerrar sesión</Text>
       </TouchableOpacity>

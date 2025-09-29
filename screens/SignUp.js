@@ -213,9 +213,7 @@ export default function SignUp({ navigation }) {
           <Text style={styles.buttonText}>Registrarse</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.signUpText}>¿Ya tienes cuenta? Inicia sesión</Text>
-        </TouchableOpacity>
+
         </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
@@ -242,7 +240,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: 70,
+    backgroundColor: 'rgba(255, 255, 255, 1)',
     borderRadius: 20,
   },
   
@@ -284,6 +283,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 5,
     marginTop: 10,
+    borderRadius: 20,
   },
   buttonText: {
     color: '#fff',

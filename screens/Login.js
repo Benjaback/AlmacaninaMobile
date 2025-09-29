@@ -132,8 +132,9 @@ export default function Login({ navigation }) {
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
           <Text style={styles.signUpText}>¿No tienes cuenta aún? Regístrate</Text>
         </TouchableOpacity>
+        <View style={{ height: 20 }} />
         <TouchableOpacity onPress={() => navigation.navigate('Cambiar')}>
-          <Text style={styles.cambiarText}>Cambiar Contraseña</Text>
+          <Text style={styles.cambiarText}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
@@ -161,8 +162,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    paddingVertical: 150,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: 120,
+    backgroundColor: 'rgba(255, 255, 255, 1)',
     borderRadius: 20,
   },
   logo: {
