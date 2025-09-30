@@ -4,6 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
+import Toast from 'react-native-toast-message';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    paddingVertical: 150,
+    paddingVertical: 200, /*cambiar 120*/
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 20,
   },
