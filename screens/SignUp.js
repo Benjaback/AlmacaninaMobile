@@ -54,6 +54,11 @@ export default function SignUp({ navigation }) {
       setEmailError("El campo Correo no está completado.");
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("Por favor ingrese un correo electrónico válido.");
+      return;
+    }
 
     if (!password.trim()) {
       setPasswordError("El campo Contraseña no está completado.");

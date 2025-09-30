@@ -30,9 +30,16 @@ export default function Login({ navigation }) {
       Toast.show({
         type: 'success',
         text1: 'Login exitoso',
-        text2: 'Has iniciado sesión correctamente.'
+        text2: 'Has iniciado sesión correctamente.',
+        props: {
+          style: { backgroundColor: '#8F08AA' }
+        }
       });
-      navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); 
+      
+      setTimeout(() => {
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      }, 1500);
+      
     } catch (error) {
 
       setPasswordError('');
