@@ -31,7 +31,7 @@ export default function Home({ navigation }) {
         props: {
           style: {
             borderLeftColor: '8F08AA',
-           }
+          }
         }
       });
       

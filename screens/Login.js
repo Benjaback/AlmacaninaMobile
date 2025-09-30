@@ -5,6 +5,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
 import Toast from 'react-native-toast-message';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
@@ -56,7 +57,7 @@ export default function Login({ navigation }) {
           setEmailError("No se encontró un usuario con este correo.");
           break;
         case 'auth/invalid-credential':
-          setPasswordError("Email o contraseña incorrectos");
+          setPasswordError("Email o contraseña incorrectos.");
           break;
         case 'auth/too-many-requests':
           Toast.show({
@@ -75,7 +76,7 @@ export default function Login({ navigation }) {
         default:
           Toast.show({
             type: 'error',
-            text1: 'Error de autenticación',
+            text1: 'Error de autenticación.',
             text2: `Código: ${error.code}`
           });
       }
@@ -102,6 +103,13 @@ export default function Login({ navigation }) {
         <View style={styles.overlay}>
           <Image source={require('../assets/logo.png')} style={styles.logo} />
           <Text style={styles.title}>Iniciar sesión</Text>
+
+          <View style={styles.socialIcon}>
+            <AntDesign name="google" style={styles.iconSocial} size={30} color="black" />
+            <FontAwesome name="facebook-square" style={styles.iconSocial} size={30} color="black" />
+            <AntDesign name="apple" style={styles.iconSocial} size={30} color="black" />
+          </View>
+
         <Text style={styles.label}>Correo</Text>
         <View style={styles.inputContainer}>
           <FontAwesome name="envelope" size={20} color="#ccc" style={styles.icon} />
@@ -132,17 +140,22 @@ export default function Login({ navigation }) {
         </View>
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
+        
+        <TouchableOpacity style={styles.contCambiarText} onPress={() => navigation.navigate('Cambiar')}>
+          <Text style={styles.cambiarText}>¿Olvidaste tu contraseña?</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Ingresar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-          <Text style={styles.signUpText}>¿No tienes cuenta aún? Regístrate</Text>
+          <Text style={styles.signUpText}>
+            ¿No estas registrado aún?
+            <Text style={styles.signUp}> Regístrate.</Text>
+          </Text>
         </TouchableOpacity>
         <View style={{ height: 20 }} />
-        <TouchableOpacity onPress={() => navigation.navigate('Cambiar')}>
-          <Text style={styles.cambiarText}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
@@ -169,7 +182,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    paddingVertical: 120,
+    paddingVertical: '20%', /* Altura del contenedor de login */
     backgroundColor: 'rgba(255, 255, 255, 1)',
     borderRadius: 20,
   },
@@ -219,13 +232,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   signUpText: {
-    marginTop: 20,
+    top: 25,
     color: '#007AFF',
   },
-  cambiarText: {
-    marginTop: 20,
+  signUp:{ /* texto registrarse del singUpText */
+    textDecorationLine: 'underline',
+  },
+  contCambiarText:{ /* Contenedor de pregunta de olvidar contraseña*/
+    alignSelf: 'flex-end',
+  },
+  cambiarText: { /* Pregunta de olvidar contraseña */
+    marginTop: 5,
     color: '#007AFF',
-    textAlign : 'center',
+    textAlign: 'center',
+  },
+  socialIcon:{ /* Contenedor de iconos de redes sociales */
+    flexDirection: 'row',
+  },
+  iconSocial:{ /* Iconos de redes sociales */
+    marginHorizontal: 15,
   },
   errorText: {
     color: '#B50000',
