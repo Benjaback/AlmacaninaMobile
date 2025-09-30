@@ -30,7 +30,7 @@ function Navegacion() {
       <Stack.Navigator initialRouteName={estaAutenticado ? "Inicio" : "Login"}>
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-        <Stack.Screen name="Inicio" component={PantallaInicio} options={{ title: 'Inicio' }} />
+        <Stack.Screen name="Inicio" component={PantallaInicio} options={{ headerShown: false }} />
         <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
       </Stack.Navigator>
     </NavigationContainer>
