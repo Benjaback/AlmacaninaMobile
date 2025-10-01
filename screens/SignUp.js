@@ -22,53 +22,47 @@ export default function SignUp({ navigation }) {
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
 
+  const [firstNameSuccess, setFirstNameSuccess] = useState('');
+  const [lastNameSuccess, setLastNameSuccess] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [confirmPasswordSuccess, setConfirmPasswordSuccess] = useState('');
+
   const handleSignUp = async () => {
-  
+
     setFirstNameError('');
     setLastNameError('');
     setEmailError('');
     setPasswordError('');
     setConfirmPasswordError('');
 
-  
+    // Check for empty fields and set errors if empty
+    let hasError = false;
     if (!firstName.trim()) {
-      setFirstNameError("El campo Nombre no está completado.");
-      return;
+      setFirstNameError("Este campo es obligatorio");
+      hasError = true;
     }
-    if (!/^[a-zA-Z\s]+$/.test(firstName)) {
-      setFirstNameError("El nombre solo puede contener letras y espacios.");
-      return;
-    }
-
-  
     if (!lastName.trim()) {
-      setLastNameError("El campo Apellido no está completado.");
-      return;
+      setLastNameError("Este campo es obligatorio");
+      hasError = true;
     }
-    if (!/^[a-zA-Z\s]+$/.test(lastName)) {
-      setLastNameError("El apellido solo puede contener letras y espacios.");
-      return;
-    }
-
     if (!email.trim()) {
-      setEmailError("El campo Correo no está completado.");
-      return;
+      setEmailError("Este campo es obligatorio");
+      hasError = true;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setEmailError("Por favor ingrese un correo electrónico válido.");
-      return;
-    }
-
     if (!password.trim()) {
-      setPasswordError("El campo Contraseña no está completado.");
+      setPasswordError("Este campo es obligatorio");
+      hasError = true;
+    }
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError("Este campo es obligatorio");
+      hasError = true;
+    }
+    if (hasError) {
       return;
     }
 
-    if (!confirmPassword.trim()) {
-      setConfirmPasswordError("El campo Confirmar Contraseña no está completado.");
-      return;
-    }
+
 
     if (password !== confirmPassword) {
       setConfirmPasswordError("Las contraseñas no coinciden.");
@@ -150,11 +144,22 @@ export default function SignUp({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="Ingrese su nombre"
-            value={firstName}
-            onChangeText={(text) => setFirstName(text.replace(/[^a-zA-Z\s]/g, ''))}
-          />
-        </View>
-        {firstNameError ? <Text style={styles.errorText}>{firstNameError}</Text> : null}
+          value={firstName}
+          onChangeText={(text) => {
+            const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+            setFirstName(cleanedText);
+            if (!cleanedText.trim()) {
+              setFirstNameError('Este campo es obligatorio');
+              setFirstNameSuccess('');
+            } else {
+              setFirstNameError('');
+              setFirstNameSuccess('Campo válido');
+            }
+          }}
+        />
+      </View>
+      {firstNameError ? <Text style={styles.errorText}>{firstNameError}</Text> : null}
+      {firstNameSuccess ? <Text style={styles.successText}>{firstNameSuccess}</Text> : null}
 
         <Text style={styles.label}>Apellido</Text>
         <View style={styles.inputContainer}>
@@ -163,10 +168,21 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su apellido"
             value={lastName}
-            onChangeText={(text) => setLastName(text.replace(/[^a-zA-Z\s]/g, ''))}
+            onChangeText={(text) => {
+              const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+              setLastName(cleanedText);
+              if (!cleanedText.trim()) {
+                setLastNameError('Este campo es obligatorio');
+                setLastNameSuccess('');
+              } else {
+                setLastNameError('');
+                setLastNameSuccess('Campo válido');
+              }
+            }}
           />
         </View>
         {lastNameError ? <Text style={styles.errorText}>{lastNameError}</Text> : null}
+        {lastNameSuccess ? <Text style={styles.successText}>{lastNameSuccess}</Text> : null}
 
         <Text style={styles.label}>Correo</Text>
         <View style={styles.inputContainer}>
@@ -175,12 +191,30 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su correo"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+              setEmailSuccess('');
+            }}
+            onEndEditing={() => {
+              const emailRegex = /^[^\s@]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+              if (!email.trim()) {
+                setEmailError('Este campo es obligatorio');
+                setEmailSuccess('');
+              } else if (!emailRegex.test(email)) {
+                setEmailError('Debe contener @ y un dominio válido');
+                setEmailSuccess('');
+              } else {
+                setEmailError('');
+                setEmailSuccess('Campo válido');
+              }
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {emailSuccess ? <Text style={styles.successText}>{emailSuccess}</Text> : null}
 
         <Text style={styles.label}>Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -189,14 +223,28 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su contraseña"
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
+              if (!text.trim()) {
+                setPasswordError('Este campo es obligatorio');
+                setPasswordSuccess('');
+              } else if (!passwordRegex.test(text)) {
+                setPasswordError('La contraseña debe tener al menos 6 caracteres, una letra mayúscula, una minúscula y un número.');
+                setPasswordSuccess('');
+              } else {
+                setPasswordError('');
+                setPasswordSuccess('Campo válido');
+              }
+            }}
             secureTextEntry={!showPassword}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+        {passwordError ? <Text style={passwordError === 'Este campo es obligatorio' ? styles.errorText : styles.passwordErrorText}>{passwordError}</Text> : null}
+        {passwordSuccess ? <Text style={styles.successText}>{passwordSuccess}</Text> : null}
 
         <Text style={styles.label}>Confirmar Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -205,7 +253,19 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Confirme su contraseña"
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              if (!text.trim()) {
+                setConfirmPasswordError('Este campo es obligatorio');
+                setConfirmPasswordSuccess('');
+              } else if (text !== password) {
+                setConfirmPasswordError('Las contraseñas no coinciden.');
+                setConfirmPasswordSuccess('');
+              } else {
+                setConfirmPasswordError('');
+                setConfirmPasswordSuccess('Campo válido');
+              }
+            }}
             secureTextEntry={!showConfirmPassword}
           />
           <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
@@ -213,6 +273,7 @@ export default function SignUp({ navigation }) {
           </TouchableOpacity>
         </View>
         {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+        {confirmPasswordSuccess ? <Text style={styles.successText}>{confirmPasswordSuccess}</Text> : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSignUp}>
           <Text style={styles.buttonText}>Registrarse</Text>
@@ -305,6 +366,23 @@ const styles = StyleSheet.create({
     marginTop: -15,
     marginBottom: 10,
     alignSelf: 'flex-start',
+    width: '100%',
+  },
+  successText: {
+    color: 'green',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+  passwordErrorText: {
+    color: '#6e6c6cff',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '100%',
   },
 });
 
