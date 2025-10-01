@@ -36,29 +36,12 @@ export default function SignUp({ navigation }) {
     setPasswordError('');
     setConfirmPasswordError('');
 
-    // Check for empty fields and set errors if empty
-    let hasError = false;
-    if (!firstName.trim()) {
-      setFirstNameError("Este campo es obligatorio");
-      hasError = true;
-    }
-    if (!lastName.trim()) {
-      setLastNameError("Este campo es obligatorio");
-      hasError = true;
-    }
-    if (!email.trim()) {
-      setEmailError("Este campo es obligatorio");
-      hasError = true;
-    }
-    if (!password.trim()) {
-      setPasswordError("Este campo es obligatorio");
-      hasError = true;
-    }
-    if (!confirmPassword.trim()) {
-      setConfirmPasswordError("Este campo es obligatorio");
-      hasError = true;
-    }
-    if (hasError) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Todos los campos son obligatorios.'
+      });
       return;
     }
 
@@ -153,7 +136,7 @@ export default function SignUp({ navigation }) {
               setFirstNameSuccess('');
             } else {
               setFirstNameError('');
-              setFirstNameSuccess('Campo válido');
+              [/*setFirstNameSuccess('Campo válido');*/]
             }
           }}
         />
@@ -176,7 +159,7 @@ export default function SignUp({ navigation }) {
                 setLastNameSuccess('');
               } else {
                 setLastNameError('');
-                setLastNameSuccess('Campo válido');
+                [/*setLastNameSuccess('Campo válido');*/]
               }
             }}
           />
@@ -202,11 +185,11 @@ export default function SignUp({ navigation }) {
                 setEmailError('Este campo es obligatorio');
                 setEmailSuccess('');
               } else if (!emailRegex.test(email)) {
-                setEmailError('Debe contener @ y un dominio válido');
+                setEmailError('Correo inválido');
                 setEmailSuccess('');
               } else {
                 setEmailError('');
-                setEmailSuccess('Campo válido');
+                setEmailSuccess('Correo válido');
               }
             }}
             keyboardType="email-address"
