@@ -6,6 +6,7 @@ import { auth } from '../src/config/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Toast from 'react-native-toast-message';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
 export default function SignUp({ navigation }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -14,7 +15,6 @@ export default function SignUp({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
   
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
@@ -61,8 +61,6 @@ export default function SignUp({ navigation }) {
     if (hasError) {
       return;
     }
-
-
 
     if (password !== confirmPassword) {
       setConfirmPasswordError("Las contraseñas no coinciden.");
@@ -284,7 +282,6 @@ export default function SignUp({ navigation }) {
             <Text style={styles.signUp}> Inicia sesión.</Text>
           </Text>
         </TouchableOpacity>
-
 
         </View>
       </KeyboardAwareScrollView>
