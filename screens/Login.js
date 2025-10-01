@@ -39,7 +39,7 @@ export default function Login({ navigation }) {
       
       setTimeout(() => {
         navigation.reset({ index: 0, routes: [{ name: 'Inicio' }] });
-      }, 1500);
+      }, 500);
     } catch (error) {
 
       setPasswordError('');

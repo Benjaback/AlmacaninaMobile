@@ -279,6 +279,12 @@ export default function SignUp({ navigation }) {
           <Text style={styles.buttonText}>Registrarse</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.contCambiarText} onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.cambiarText}>¿Ya estás registrado?
+            <Text style={styles.signUp}> Inicia sesión.</Text>
+          </Text>
+        </TouchableOpacity>
+
 
         </View>
       </KeyboardAwareScrollView>
@@ -411,5 +417,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  contCambiarText: {
+    top: 30,
+  },
+  cambiarText: {
+    color: '#007AFF',
+  },
+  signUp:{
+    textDecorationLine: 'underline',
+  }
 });
 
