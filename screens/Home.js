@@ -13,8 +13,8 @@ export default function Home({ navigation }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-
-        const userName = user.displayName ? user.displayName : user.name.split[0];
+  
+        const userName = user.displayName || user.email.split('@')[0];
         setUserName(userName);
       }
     });
