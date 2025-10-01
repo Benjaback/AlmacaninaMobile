@@ -5,7 +5,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { auth } from '../src/config/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Toast from 'react-native-toast-message';
-
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 export default function SignUp({ navigation }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -282,6 +282,16 @@ export default function SignUp({ navigation }) {
 
         </View>
       </KeyboardAwareScrollView>
+      
+      {/* Botón Atrás en esquina superior izquierda */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.navigate('Login')}
+      >
+        <View style={styles.iconContainer}>
+          <MaterialIcons name="exit-to-app" size={35} color="black" />
+        </View>
+      </TouchableOpacity>
     </ImageBackground>
     <Toast />
     </>
@@ -383,6 +393,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'flex-start',
     width: '100%',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  iconContainer: {
+    transform: [{ rotate: '180deg' }],
+  },
+  backText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -5,36 +5,37 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';  
 import Login from '../screens/Login';
 import SignUp from '../screens/SignUp';
-import Home from '../screens/Home';
+import PantallaInicio from '../screens/Home';
+import PantallaProductos from '../screens/ProductScreen';
 
 const Stack = createStackNavigator();
 
-function Navigation() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function Navegacion() {
+  const [estaAutenticado, setEstaAutenticado] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      if (user) {
-        setIsAuthenticated(true); 
+    const desuscribir = onAuthStateChanged(auth, usuario => {
+      if (usuario) {
+        setEstaAutenticado(true); 
       } else {
-        setIsAuthenticated(false); 
+        setEstaAutenticado(false); 
       }
     });
 
-    return () => unsubscribe();
+    return () => desuscribir();
   }, []);
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isAuthenticated ? "Home" : "Login"} options={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={estaAutenticado ? "Inicio" : "Login"}>
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-
+        <Stack.Screen name="Inicio" component={PantallaInicio} options={{ headerShown: false }} />
+        <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-export default Navigation;
+export default Navegacion;
 

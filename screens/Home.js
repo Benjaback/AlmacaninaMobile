@@ -7,7 +7,7 @@ import { auth } from '../src/config/firebaseConfig';
 import Toast from 'react-native-toast-message';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
-export default function Home({ navigation }) {
+export default function PantallaInicio({ navigation }) {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function Home({ navigation }) {
     return unsubscribe;
   }, []);
 
-  const handleLogOut = async () => {
+  const cerrarSesion = async () => {
     try {
       await signOut(auth);  
       Toast.show({
@@ -49,193 +49,151 @@ export default function Home({ navigation }) {
   };
 
   return (
-    <>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.userInfo}>
-            <FontAwesome6 name="circle-user" size={35} color="#333" />
-            <Text style={styles.userName}>{userName}</Text>
+    <SafeAreaView style={styles.pantalla}>
+      <View style={styles.encabezado}>
+        <View style={styles.infoUsuario}>
+          <FontAwesome6 name="circle-user" size={35} color="#333" />
+          <Text style={styles.nombreUsuario}>{userName || 'Usuario'}</Text>
+        </View>
+        <TouchableOpacity style={styles.botonCerrarSesion} onPress={cerrarSesion}>
+          <Text style={styles.textoCerrarSesion}>Cerrar sesión</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.contenido}>
+        <View style={styles.tarjetaBienvenida}>
+          <View style={styles.contenedorIcono}>
+            <Image source={require('../assets/logoAM.png')} style={styles.logo} />
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogOut}>
-            <Text style={styles.logoutText}>Cerrar sesión</Text>
+          <View style={styles.contenedorTexto}>
+            <Text style={styles.titulo}>Bienvenido</Text>
+            <Text style={styles.textoRol}>Administrador</Text>
+            <Text style={styles.pregunta}>¿Qué deseas administrar hoy?</Text>
+          </View>
+        </View>
+
+        <View style={styles.contenedorBotones}>
+          <TouchableOpacity 
+            style={[styles.boton, styles.botonProductos]} 
+            onPress={() => navigation.navigate('GestionarProductos')}
+          >
+            <View style={styles.envoltorIcono}>
+              <AntDesign name="inbox" size={24} color="white" />
+            </View>
+            <Text style={styles.textoBoton}>EDITAR PRODUCTOS</Text>
           </TouchableOpacity>
         </View>
-
-
-        <View style={styles.content}>
-
-          <View style={styles.welcomeCard}>
-            <View style={styles.iconContainer}>
-              <Image source={require('../assets/logo.png')} style={styles.logo} />
-            </View>
-            <View style={styles.welcomeTextContainer}>
-              <Text style={styles.welcomeTitle}>Bienvenido</Text>
-              <Text style={styles.roleText}>Administrador</Text>
-              <Text style={styles.questionText}>¿Qué deseas administrar hoy?</Text>
-            </View>
-          </View>
-
-          <View style={styles.BotonContainer}>
-            <View>
-              <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Productos')}>
-                <View style={styles.iconWrapper}>
-                  <AntDesign name="inbox" size={24} color="black" />
-                </View>
-                <Text style={styles.botonTexto}>Productos</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </SafeAreaView>
+      </View>
       <Toast />
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  pantalla: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  
-
-  header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    marginTop: 35,
+  encabezado: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    borderRadius: 30,
-    borderTopWidth: 2,
-    borderTopColor: '#000000ff',
-    borderRightWidth: 2,
-    borderRightColor: '#000000ff',
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000ff',
-    borderLeftWidth: 2,
-    borderLeftColor: '#000000ff',
-    borderStyle: 'solid',
-    
   },
-  userInfo: {
+  infoUsuario: {
     flexDirection: 'row',
     alignItems: 'center',
-    
+    gap: 10,
   },
-  userName: {
-    fontSize: 18,
+  nombreUsuario: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginLeft: 10,
   },
-  logoutButton: {
-    backgroundColor: '#8F08AA',
+  botonCerrarSesion: {
+    backgroundColor: '#f44336',
     paddingHorizontal: 15,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 5,
   },
-  logoutText: {
+  textoCerrarSesion: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-
-  content: {
+  contenido: {
     flex: 1,
     padding: 20,
   },
-
-
-  welcomeCard: {
+  tarjetaBienvenida: {
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 30,
     elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    borderTopWidth: 2,
-    borderTopColor: '#8F08AA',
-    borderRightWidth: 2,
-    borderRightColor: '#8F08AA',
-    borderBottomWidth: 2,
-    borderBottomColor: '#8F08AA',
-    borderLeftWidth: 2,
-    borderLeftColor: '#8F08AA',
-    borderStyle: 'solid',
   },
-
-  welcomeTextContainer: {
-    flex: 1,
+  contenedorIcono: {
+    alignItems: 'center',
+    marginBottom: 15,
   },
-  welcomeTitle: {
-    fontSize: 20,
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  contenedorTexto: {
+    alignItems: 'center',
+  },
+  titulo: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 2,
+    marginBottom: 5,
   },
-
-  questionText: {
-    fontSize: 13,
+  textoRol: {
+    fontSize: 16,
     color: '#666',
-    lineHeight: 18,
+    marginBottom: 10,
   },
-    roleText:{
-    fontSize: 18,
-    color: '#3f3f3fff',
-    
+  pregunta: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
   },
-
-  logo: {
-    width: 90,
-    height: 80,
-    resizeMode: 'contain',
-  },
-
-  BotonContainer: {
-    backgroundColor: '#E5D3F2',
-    height: '10%',
-    width: '50%',
-    borderRadius: 30,
-    borderTopWidth: 2,
-    borderTopColor: '#8F08AA',
-    borderRightWidth: 2,
-    borderRightColor: '#8F08AA',
-    borderBottomWidth: 2,
-    borderBottomColor: '#8F08AA',
-    borderLeftWidth: 2,
-    borderLeftColor: '#8F08AA',
-    borderStyle: 'solid',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  contenedorBotones: {
     flex: 1,
   },
-  iconWrapper: {
+  boton: {
+    backgroundColor: '#9c27b0',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 20,
-    height: 20,
-    borderRadius: 30,
-    marginBottom: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+    borderRadius: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    gap: 10,
   },
-  botonTexto:{
-    fontSize: 18,
-    color: '#000000ff',
+  botonProductos: {
+    backgroundColor: '#9c27b0',
+  },
+  envoltorIcono: {
+    marginRight: 5,
+  },
+  textoBoton: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
-
