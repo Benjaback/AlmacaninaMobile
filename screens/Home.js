@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, SafeAreaView } 
 import { FontAwesome } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../src/config/firebaseConfig';
+import { auth, db } from '../src/config/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
-export default function PantallaInicio({ navigation }) {
+export default function Home({ navigation }) {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function PantallaInicio({ navigation }) {
     return unsubscribe;
   }, []);
 
-  const cerrarSesion = async () => {
+  const handleLogOut = async () => {
     try {
       await signOut(auth);  
       Toast.show({
@@ -31,7 +32,7 @@ export default function PantallaInicio({ navigation }) {
         props: {
           style: {
             borderLeftColor: '8F08AA',
-          }
+           }
         }
       });
       
@@ -49,151 +50,192 @@ export default function PantallaInicio({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.pantalla}>
-      <View style={styles.encabezado}>
-        <View style={styles.infoUsuario}>
-          <FontAwesome6 name="circle-user" size={35} color="#333" />
-          <Text style={styles.nombreUsuario}>{userName || 'Usuario'}</Text>
-        </View>
-        <TouchableOpacity style={styles.botonCerrarSesion} onPress={cerrarSesion}>
-          <Text style={styles.textoCerrarSesion}>Cerrar sesión</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.contenido}>
-        <View style={styles.tarjetaBienvenida}>
-          <View style={styles.contenedorIcono}>
-            <Image source={require('../assets/logoAM.png')} style={styles.logo} />
+    <>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.userInfo}>
+            <FontAwesome6 name="circle-user" size={35} color="#333" />
+            <Text style={styles.userName}>{userName}</Text>
           </View>
-          <View style={styles.contenedorTexto}>
-            <Text style={styles.titulo}>Bienvenido</Text>
-            <Text style={styles.textoRol}>Administrador</Text>
-            <Text style={styles.pregunta}>¿Qué deseas administrar hoy?</Text>
-          </View>
-        </View>
-
-        <View style={styles.contenedorBotones}>
-          <TouchableOpacity 
-            style={[styles.boton, styles.botonProductos]} 
-            onPress={() => navigation.navigate('GestionarProductos')}
-          >
-            <View style={styles.envoltorIcono}>
-              <AntDesign name="inbox" size={24} color="white" />
-            </View>
-            <Text style={styles.textoBoton}>EDITAR PRODUCTOS</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogOut}>
+            <Text style={styles.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </View>
-      </View>
+
+
+        <View style={styles.content}>
+
+          <View style={styles.welcomeCard}>
+            <View style={styles.iconContainer}>
+              <Image source={require('../assets/logo.png')} style={styles.logo} />
+            </View>
+            <View style={styles.welcomeTextContainer}>
+              <Text style={styles.welcomeTitle}>Bienvenido</Text>
+              <Text style={styles.roleText}>Administrador</Text>
+              <Text style={styles.questionText}>¿Qué deseas administrar hoy?</Text>
+            </View>
+          </View>
+
+          <View style={styles.BotonContainer}>
+            <View>
+              <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('GestionarProductos')}>
+                <View style={styles.iconWrapper}>
+                  <AntDesign name="inbox" size={24} color="black" />
+                </View>
+                <Text style={styles.botonTexto}>Productos</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
       <Toast />
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  pantalla: {
+  container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  encabezado: {
+  
+
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginTop: 35,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderRadius: 30,
+    borderTopWidth: 2,
+    borderTopColor: '#000000ff',
+    borderRightWidth: 2,
+    borderRightColor: '#000000ff',
+    borderBottomWidth: 2,
+    borderBottomColor: '#000000ff',
+    borderLeftWidth: 2,
+    borderLeftColor: '#000000ff',
+    borderStyle: 'solid',
+    
   },
-  infoUsuario: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    
   },
-  nombreUsuario: {
-    fontSize: 16,
+  userName: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    marginLeft: 10,
   },
-  botonCerrarSesion: {
-    backgroundColor: '#f44336',
+  logoutButton: {
+    backgroundColor: '#8F08AA',
     paddingHorizontal: 15,
     paddingVertical: 8,
-    borderRadius: 5,
+    borderRadius: 20,
   },
-  textoCerrarSesion: {
+  logoutText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  contenido: {
+
+  content: {
     flex: 1,
     padding: 20,
   },
-  tarjetaBienvenida: {
+
+
+  welcomeCard: {
     backgroundColor: '#fff',
     borderRadius: 15,
     padding: 20,
-    marginBottom: 30,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  contenedorIcono: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-  },
-  contenedorTexto: {
-    alignItems: 'center',
-  },
-  titulo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  textoRol: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-  },
-  pregunta: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-  },
-  contenedorBotones: {
-    flex: 1,
-  },
-  boton: {
-    backgroundColor: '#9c27b0',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    borderRadius: 15,
+    marginBottom: 30,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    gap: 10,
+    borderTopWidth: 2,
+    borderTopColor: '#8F08AA',
+    borderRightWidth: 2,
+    borderRightColor: '#8F08AA',
+    borderBottomWidth: 2,
+    borderBottomColor: '#8F08AA',
+    borderLeftWidth: 2,
+    borderLeftColor: '#8F08AA',
+    borderStyle: 'solid',
   },
-  botonProductos: {
-    backgroundColor: '#9c27b0',
+
+  welcomeTextContainer: {
+    flex: 1,
   },
-  envoltorIcono: {
-    marginRight: 5,
-  },
-  textoBoton: {
-    color: '#fff',
-    fontSize: 16,
+  welcomeTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+
+  questionText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+    roleText:{
+    fontSize: 18,
+    color: '#3f3f3fff',
+    
+  },
+
+  logo: {
+    width: 90,
+    height: 80,
+    resizeMode: 'contain',
+  },
+
+  BotonContainer: {
+    backgroundColor: '#E5D3F2',
+    height: '10%',
+    width: '50%',
+    borderRadius: 30,
+    borderTopWidth: 2,
+    borderTopColor: '#8F08AA',
+    borderRightWidth: 2,
+    borderRightColor: '#8F08AA',
+    borderBottomWidth: 2,
+    borderBottomColor: '#8F08AA',
+    borderLeftWidth: 2,
+    borderLeftColor: '#8F08AA',
+    borderStyle: 'solid',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
+    height: 20,
+    borderRadius: 30,
+    marginBottom: 8,
+  },
+  botonTexto:{
+    fontSize: 18,
+    color: '#000000ff',
   },
 });
