@@ -104,9 +104,15 @@ export default function Login({ navigation }) {
           <Text style={styles.title}>Iniciar sesión</Text>
 
           <View style={styles.socialIcon}>
-            <AntDesign name="google" style={styles.iconSocial} size={30} color="black" />
-            <FontAwesome name="facebook-square" style={styles.iconSocial} size={30} color="black" />
-            <AntDesign name="apple" style={styles.iconSocial} size={30} color="black" />
+            <TouchableOpacity>
+              <AntDesign name="google" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <FontAwesome name="facebook-square" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <AntDesign name="apple" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
           </View>
 
         <Text style={styles.label}>Correo</Text>
