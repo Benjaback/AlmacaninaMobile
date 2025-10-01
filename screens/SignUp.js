@@ -14,6 +14,13 @@ export default function SignUp({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  
+  // Estados para validación de contraseña en tiempo real
+  const [passwordLength, setPasswordLength] = useState(false);
+  const [hasUppercase, setHasUppercase] = useState(false);
+  const [hasLowercase, setHasLowercase] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
   
   
   const [firstNameError, setFirstNameError] = useState('');
@@ -28,6 +35,14 @@ export default function SignUp({ navigation }) {
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [confirmPasswordSuccess, setConfirmPasswordSuccess] = useState('');
 
+  // Función para validar contraseña en tiempo real
+  const validatePassword = (text) => {
+    setPasswordLength(text.length >= 6);
+    setHasUppercase(/[A-Z]/.test(text));
+    setHasLowercase(/[a-z]/.test(text));
+    setHasNumber(/\d/.test(text));
+  };
+
   const handleSignUp = async () => {
 
     setFirstNameError('');
@@ -39,23 +54,23 @@ export default function SignUp({ navigation }) {
     // Check for empty fields and set errors if empty
     let hasError = false;
     if (!firstName.trim()) {
-      setFirstNameError("Este campo es obligatorio");
+      setFirstNameError("Este campo es obligatorio.");
       hasError = true;
     }
     if (!lastName.trim()) {
-      setLastNameError("Este campo es obligatorio");
+      setLastNameError("Este campo es obligatorio.");
       hasError = true;
     }
     if (!email.trim()) {
-      setEmailError("Este campo es obligatorio");
+      setEmailError("Este campo es obligatorio.");
       hasError = true;
     }
     if (!password.trim()) {
-      setPasswordError("Este campo es obligatorio");
+      setPasswordError("Este campo es obligatorio.");
       hasError = true;
     }
     if (!confirmPassword.trim()) {
-      setConfirmPasswordError("Este campo es obligatorio");
+      setConfirmPasswordError("Este campo es obligatorio.");
       hasError = true;
     }
     if (hasError) {
@@ -66,12 +81,6 @@ export default function SignUp({ navigation }) {
 
     if (password !== confirmPassword) {
       setConfirmPasswordError("Las contraseñas no coinciden.");
-      return;
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
-    if (!passwordRegex.test(password)) {
-      setPasswordError("La contraseña debe tener al menos 6 caracteres, incluyendo una letra mayúscula, una minúscula y un número.");
       return;
     }
 
@@ -97,9 +106,6 @@ export default function SignUp({ navigation }) {
         case 'auth/invalid-email':
           setEmailError("El formato del correo electrónico no es válido.");
           break;
-        case 'auth/weak-password':
-          setPasswordError("La contraseña es demasiado débil.");
-          break;
         case 'auth/network-request-failed':
           Toast.show({
             type: 'error',
@@ -111,7 +117,7 @@ export default function SignUp({ navigation }) {
           Toast.show({
             type: 'error',
             text1: 'Error de registro',
-            text2: `Código: ${error.code}`
+            text2: `No cumple com los requisitos`
           });
       }
     }
@@ -149,11 +155,11 @@ export default function SignUp({ navigation }) {
             const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
             setFirstName(cleanedText);
             if (!cleanedText.trim()) {
-              setFirstNameError('Este campo es obligatorio');
+              setFirstNameError('Este campo es obligatorio.');
               setFirstNameSuccess('');
             } else {
               setFirstNameError('');
-              setFirstNameSuccess('Campo válido');
+              setFirstNameSuccess('Campo válido.');
             }
           }}
         />
@@ -172,11 +178,11 @@ export default function SignUp({ navigation }) {
               const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
               setLastName(cleanedText);
               if (!cleanedText.trim()) {
-                setLastNameError('Este campo es obligatorio');
+                setLastNameError('Este campo es obligatorio.');
                 setLastNameSuccess('');
               } else {
                 setLastNameError('');
-                setLastNameSuccess('Campo válido');
+                setLastNameSuccess('Campo válido.');
               }
             }}
           />
@@ -199,14 +205,14 @@ export default function SignUp({ navigation }) {
             onEndEditing={() => {
               const emailRegex = /^[^\s@]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
               if (!email.trim()) {
-                setEmailError('Este campo es obligatorio');
+                setEmailError('Este campo es obligatorio.');
                 setEmailSuccess('');
               } else if (!emailRegex.test(email)) {
-                setEmailError('Debe contener @ y un dominio válido');
+                setEmailError('Debe contener @ y un dominio válido.');
                 setEmailSuccess('');
               } else {
                 setEmailError('');
-                setEmailSuccess('Campo válido');
+                setEmailSuccess('Campo válido.');
               }
             }}
             keyboardType="email-address"
@@ -223,18 +229,37 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su contraseña"
             value={password}
+            onFocus={() => setShowPasswordRequirements(true)}
             onChangeText={(text) => {
               setPassword(text);
+              validatePassword(text);
+              
+              // Re-evaluar confirmPassword si ya hay algo escrito
+              if (confirmPassword) {
+                const allRequirementsMet = text.length >= 6 && /[A-Z]/.test(text) && /[a-z]/.test(text) && /\d/.test(text);
+                
+                if (confirmPassword === text && allRequirementsMet) {
+                  setConfirmPasswordError('');
+                  setConfirmPasswordSuccess('Las contraseñas coinciden.');
+                } else if (confirmPassword !== text) {
+                  setConfirmPasswordError('Las contraseñas no coinciden.');
+                  setConfirmPasswordSuccess('');
+                } else {
+                  setConfirmPasswordError('');
+                  setConfirmPasswordSuccess('');
+                }
+              }
+              
               const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
               if (!text.trim()) {
-                setPasswordError('Este campo es obligatorio');
+                setPasswordError('Este campo es obligatorio.');
                 setPasswordSuccess('');
               } else if (!passwordRegex.test(text)) {
-                setPasswordError('La contraseña debe tener al menos 6 caracteres, una letra mayúscula, una minúscula y un número.');
+                setPasswordError('');
                 setPasswordSuccess('');
               } else {
                 setPasswordError('');
-                setPasswordSuccess('Campo válido');
+                setPasswordSuccess('Campo válido.');
               }
             }}
             secureTextEntry={!showPassword}
@@ -243,7 +268,59 @@ export default function SignUp({ navigation }) {
             <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
-        {passwordError ? <Text style={passwordError === 'Este campo es obligatorio' ? styles.errorText : styles.passwordErrorText}>{passwordError}</Text> : null}
+        
+        {/* Requisitos de contraseña */}
+        {showPasswordRequirements && (
+          <View style={styles.passwordRequirements}>
+            <Text style={styles.requirementsTitle}>La contraseña debe tener:</Text>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={passwordLength ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={passwordLength ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, passwordLength && styles.requirementMet]}>
+                Al menos 6 caracteres
+              </Text>
+            </View>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={hasUppercase ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={hasUppercase ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, hasUppercase && styles.requirementMet]}>
+                Incluir al menos una letra mayúscula
+              </Text>
+            </View>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={hasLowercase ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={hasLowercase ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, hasLowercase && styles.requirementMet]}>
+                Incluir letra minúscula
+              </Text>
+            </View>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={hasNumber ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={hasNumber ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, hasNumber && styles.requirementMet]}>
+                Incluir al menos un número
+              </Text>
+            </View>
+          </View>
+        )}
+        
+        {passwordError ? <Text style={passwordError === 'Este campo es obligatorio.' ? styles.errorText : styles.passwordErrorText}>{passwordError}</Text> : null}
         {passwordSuccess ? <Text style={styles.successText}>{passwordSuccess}</Text> : null}
 
         <Text style={styles.label}>Confirmar Contraseña</Text>
@@ -255,15 +332,21 @@ export default function SignUp({ navigation }) {
             value={confirmPassword}
             onChangeText={(text) => {
               setConfirmPassword(text);
+              // Verificar si todos los requisitos de contraseña están cumplidos
+              const allRequirementsMet = passwordLength && hasUppercase && hasLowercase && hasNumber;
+              
               if (!text.trim()) {
-                setConfirmPasswordError('Este campo es obligatorio');
+                setConfirmPasswordError('Este campo es obligatorio.');
                 setConfirmPasswordSuccess('');
               } else if (text !== password) {
                 setConfirmPasswordError('Las contraseñas no coinciden.');
                 setConfirmPasswordSuccess('');
+              } else if (text === password && allRequirementsMet) {
+                setConfirmPasswordError('');
+                setConfirmPasswordSuccess('Las contraseñas coinciden.');
               } else {
                 setConfirmPasswordError('');
-                setConfirmPasswordSuccess('Campo válido');
+                setConfirmPasswordSuccess('');
               }
             }}
             secureTextEntry={!showConfirmPassword}
@@ -399,6 +482,35 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignSelf: 'flex-start',
     width: '100%',
+  },
+  passwordRequirements: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 5,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: 8,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginLeft: 8,
+  },
+  requirementMet: {
+    color: '#4CAF50',
+    fontWeight: '500',
   },
   backButton: {
     position: 'absolute',
