@@ -19,7 +19,7 @@ export default function Login({ navigation }) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Por favor ingrese ambos campos.'
+        text2: 'Por favor complete los campos.'
       });
       return;
     }
