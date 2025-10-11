@@ -8,7 +8,7 @@ import {
 export default function ProductScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Productos</Text>
+      <Text style={styles.title}>Productoss</Text>
     </View>
   );
 }
