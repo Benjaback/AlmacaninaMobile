@@ -85,10 +85,13 @@ export default function SignUp({ navigation }) {
       switch (error.code) {
         case 'auth/email-already-in-use':
           setEmailError("El correo electrónico ya está en uso.");
-          break;
+        break;
         case 'auth/invalid-email':
           setEmailError("El formato del correo electrónico no es válido.");
-          break;
+        break;
+        case 'auth/weak-password':
+          setPasswordError("La contraseña es demasiado débil.");
+        break;
         case 'auth/network-request-failed':
           Toast.show({
             type: 'error',
@@ -100,7 +103,7 @@ export default function SignUp({ navigation }) {
           Toast.show({
             type: 'error',
             text1: 'Error de registro',
-            text2: `No cumple com los requisitos`
+            text2: `No cumple com los requisitos.`
           });
       }
     }
@@ -138,8 +141,8 @@ export default function SignUp({ navigation }) {
             const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
             setFirstName(cleanedText);
             if (!cleanedText.trim()) {
-              setFirstNameError('Este campo es obligatorio.');
-              setFirstNameSuccess('');
+              // setFirstNameError('Este campo es obligatorio.');
+              // setFirstNameSuccess('');
             } else {
               setFirstNameError('');
               [/*setFirstNameSuccess('Campo válido');*/]
@@ -161,8 +164,8 @@ export default function SignUp({ navigation }) {
               const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
               setLastName(cleanedText);
               if (!cleanedText.trim()) {
-                setLastNameError('Este campo es obligatorio.');
-                setLastNameSuccess('');
+                // setLastNameError('Este campo es obligatorio.');
+                // setLastNameSuccess('');
               } else {
                 setLastNameError('');
                 [/*setLastNameSuccess('Campo válido');*/]
@@ -188,14 +191,14 @@ export default function SignUp({ navigation }) {
             onEndEditing={() => {
               const emailRegex = /^[^\s@]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
               if (!email.trim()) {
-                setEmailError('Este campo es obligatorio.');
-                setEmailSuccess('');
+                // setEmailError('Este campo es obligatorio.');
+                // setEmailSuccess('');
               } else if (!emailRegex.test(email)) {
-                setEmailError('Correo inválido');
-                setEmailSuccess('');
+                setEmailError('El formato del correo electrónico no es válido.');
+                // setEmailSuccess('');
               } else {
                 setEmailError('');
-                setEmailSuccess('Correo válido');
+                setEmailSuccess('Correo válido.');
               }
             }}
             keyboardType="email-address"
@@ -235,14 +238,14 @@ export default function SignUp({ navigation }) {
               
               const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
               if (!text.trim()) {
-                setPasswordError('Este campo es obligatorio.');
-                setPasswordSuccess('');
+                // setPasswordError('Este campo es obligatorio.');
+                // setPasswordSuccess('');
               } else if (!passwordRegex.test(text)) {
                 setPasswordError('');
                 setPasswordSuccess('');
               } else {
-                setPasswordError('');
-                setPasswordSuccess('Campo válido.');
+                // setPasswordError('');
+                // setPasswordSuccess('Campo válido.');
               }
             }}
             secureTextEntry={!showPassword}
@@ -286,7 +289,7 @@ export default function SignUp({ navigation }) {
                 color={hasLowercase ? "#4CAF50" : "#ccc"} 
               />
               <Text style={[styles.requirementText, hasLowercase && styles.requirementMet]}>
-                Incluir letra minúscula
+                Incluir al menos una letra minúscula
               </Text>
             </View>
             
@@ -319,8 +322,8 @@ export default function SignUp({ navigation }) {
               const allRequirementsMet = passwordLength && hasUppercase && hasLowercase && hasNumber;
               
               if (!text.trim()) {
-                setConfirmPasswordError('Este campo es obligatorio.');
-                setConfirmPasswordSuccess('');
+                // setConfirmPasswordError('Este campo es obligatorio.');
+                // setConfirmPasswordSuccess('');
               } else if (text !== password) {
                 setConfirmPasswordError('Las contraseñas no coinciden.');
                 setConfirmPasswordSuccess('');
@@ -519,7 +522,9 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   signUp:{
-    textDecorationLine: 'underline',
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 14,
   }
 });
 
