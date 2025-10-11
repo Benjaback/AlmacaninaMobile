@@ -19,7 +19,7 @@ export default function Login({ navigation }) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Por favor ingrese ambos campos.'
+        text2: 'Por favor complete los campos.'
       });
       return;
     }
@@ -30,7 +30,7 @@ export default function Login({ navigation }) {
       setEmailError('');
       Toast.show({
         type: 'success',
-        text1: 'Login exitoso',
+        text1: 'Inicio de sesión exitoso',
         text2: 'Has iniciado sesión correctamente.',
         props: {
           style: { backgroundColor: '#8F08AA' }
@@ -39,7 +39,7 @@ export default function Login({ navigation }) {
       
       setTimeout(() => {
         navigation.reset({ index: 0, routes: [{ name: 'Inicio' }] });
-      }, 500);
+      }, 1500);
     } catch (error) {
 
       setPasswordError('');
@@ -156,7 +156,7 @@ export default function Login({ navigation }) {
 
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
           <Text style={styles.signUpText}>
-            ¿No estas registrado aún?
+            ¿No estás registrado aún?
             <Text style={styles.signUp}> Regístrate.</Text>
           </Text>
         </TouchableOpacity>
@@ -240,8 +240,10 @@ const styles = StyleSheet.create({
     top: 25,
     color: '#007AFF',
   },
-  signUp:{ /* texto registrarse del singUpText */
-    textDecorationLine: 'underline',
+  signUp: { /* texto registrarse del singUpText */
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   contCambiarText:{ /* Contenedor de pregunta de olvidar contraseña*/
     alignSelf: 'flex-end',

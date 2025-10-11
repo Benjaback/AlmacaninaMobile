@@ -7,6 +7,11 @@ import { auth, db } from '../src/config/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+
+
+
 
 export default function Home({ navigation }) {
   const [userName, setUserName] = useState('');
@@ -23,6 +28,7 @@ export default function Home({ navigation }) {
   }, []);
 
   const handleLogOut = async () => {
+    
     try {
       await signOut(auth);  
       Toast.show({
@@ -157,7 +163,7 @@ const styles = StyleSheet.create({
 
 
   welcomeCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffd900bb',
     borderRadius: 15,
     padding: 20,
     flexDirection: 'row',
