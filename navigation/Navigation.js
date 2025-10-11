@@ -5,8 +5,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';  
 import Login from '../screens/Login';
 import SignUp from '../screens/SignUp';
-import PantallaInicio from '../screens/Home';
+import HomeWithTabs from '../screens/Home';
 import PantallaProductos from '../screens/ProductScreen';
+import PantallaPerfil from '../screens/PerfilScreen';
 
 const Stack = createStackNavigator();
 
@@ -30,8 +31,9 @@ function Navegacion() {
       <Stack.Navigator initialRouteName={estaAutenticado ? "Inicio" : "Login"}>
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-        <Stack.Screen name="Inicio" component={PantallaInicio} options={{ headerShown: false }} />
+        <Stack.Screen name="Inicio" component={HomeWithTabs} options={{ headerShown: false }} />
         <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
+        <Stack.Screen name="Perfil" component={PantallaPerfil} options={{ title: 'Perfil' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

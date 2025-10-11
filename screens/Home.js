@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, SafeAreaView } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
@@ -8,12 +9,15 @@ import { doc, getDoc } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
+import ProductScreen from './ProductScreen';
+import PantallaPerfil from './PerfilScreen';
 
 
 
 
 
-export default function Home({ navigation }) {
+function Home({ navigation, tabNavigation }) {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
@@ -57,39 +61,46 @@ export default function Home({ navigation }) {
 
   return (
     <>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.userInfo}>
-            <FontAwesome6 name="circle-user" size={35} color="#333" />
-            <Text style={styles.userName}>{userName}</Text>
-          </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogOut}>
-            <Text style={styles.logoutText}>Cerrar sesión</Text>
-          </TouchableOpacity>
-        </View>
-
-
-        <View style={styles.content}>
-
-          <View style={styles.welcomeCard}>
-            <View style={styles.iconContainer}>
-              <Image source={require('../assets/logo.png')} style={styles.logo} />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.userInfo}>
+              <FontAwesome6 name="circle-user" size={35} color="#333" />
+              <Text style={styles.userName}>{userName}</Text>
             </View>
-            <View style={styles.welcomeTextContainer}>
-              <Text style={styles.welcomeTitle}>Bienvenido</Text>
-              <Text style={styles.roleText}>Administrador</Text>
-              <Text style={styles.questionText}>¿Qué deseas administrar hoy?</Text>
-            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogOut}>
+              <Text style={styles.logoutText}>Cerrar sesión</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.BotonContainer}>
-            <View>
-              <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('GestionarProductos')}>
-                <View style={styles.iconWrapper}>
-                  <AntDesign name="inbox" size={24} color="black" />
-                </View>
-                <Text style={styles.botonTexto}>Productos</Text>
-              </TouchableOpacity>
+
+          <View style={styles.content}>
+
+            <View style={styles.welcomeCard}>
+              <View style={styles.iconContainer}>
+                <Image source={require('../assets/logo.png')} style={styles.logo} />
+              </View>
+              <View style={styles.welcomeTextContainer}>
+                <Text style={styles.welcomeTitle}>Bienvenido</Text>
+                <Text style={styles.roleText}>Administrador</Text>
+                <Text style={styles.questionText}>¿Qué deseas administrar hoy?</Text>
+              </View>
+            </View>
+
+            <View style={styles.BotonContainer}>
+              <View>
+                <TouchableOpacity style={styles.boton} onPress={() => {
+                  // Navegar a la pestaña PRODUCTOS del TabNavigator
+                  if (tabNavigation) {
+                    tabNavigation.navigate('PRODUCTOS');
+                  }
+                }}>
+                  <View style={styles.iconWrapper}>
+                    <AntDesign name="inbox" size={24} color="black" />
+                  </View>
+                  <Text style={styles.botonTexto}>Productos</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -99,7 +110,100 @@ export default function Home({ navigation }) {
   );
 }
 
+// Componentes para las pantallas de cada tab
+function InicioScreen({ navigation }) {
+  const tabNavigation = useNavigation();
+  
+  return (
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <Home navigation={navigation} tabNavigation={tabNavigation} />
+    </View>
+  );
+}
+
+function ProductosScreen({ navigation }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <ProductScreen navigation={navigation} />
+    </View>
+  );
+}
+
+function NotificacionesScreen() {
+  return (
+    <View style={styles.screenContainer}>
+      <Text style={styles.screenTitle}>Notificaciones</Text>
+      <Text style={styles.screenSubtitle}>Mantente al día con las últimas notificaciones</Text>
+    </View>
+  );
+}
+
+function PerfilScreen({ navigation }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <PantallaPerfil navigation={navigation} />
+    </View>
+  );
+}
+
+// Configuración del Tab Navigator
+const Tab = createBottomTabNavigator();
+
+export default function HomeWithTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#FFD700', // Color dorado
+          height: 80,
+          paddingBottom: 12,
+          paddingTop: 12,
+        },
+        tabBarActiveTintColor: '#333',
+        tabBarInactiveTintColor: '#666',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Tab.Screen
+        name="INICIO"
+        component={InicioScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="home" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="PRODUCTOS"
+        component={ProductosScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <AntDesign name="inbox" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="PERFIL"
+        component={PerfilScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="user" size={24} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -110,7 +214,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    marginTop: 35,
+    marginTop: 3,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -243,5 +347,24 @@ const styles = StyleSheet.create({
   botonTexto:{
     fontSize: 18,
     color: '#000000ff',
+  },
+  // Estilos para las pantallas de los tabs
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  screenTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  screenSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 });
