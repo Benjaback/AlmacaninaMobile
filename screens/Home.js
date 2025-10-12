@@ -31,31 +31,62 @@ function Home({ navigation, tabNavigation }) {
   }, []);
 
   const handleLogOut = async () => {
-    
-    try {
-      await signOut(auth);  
-      Toast.show({
-        type: 'success',
-        text1: 'Sesión cerrada',
-        text2: 'Has cerrado sesión correctamente.',
-        props: {
-          style: {
-            borderLeftColor: '8F08AA',
+    Alert.alert(
+      'Cerrar Sesión',
+      '¿Estás seguro de que deseas salir de AlmaCanina?\n\nTus datos estarán seguros y podrás volver cuando quieras.',
+      [
+        {
+          text: 'No, quedarme',
+          style: 'cancel',
+          onPress: () => {
+            Toast.show({
+              type: 'info',
+              text1: 'Sesión mantenida',
+              text2: 'Continuando en AlmaCanina...',
+              visibilityTime: 2000,
+            });
+          }
+        },
+        {
+          text: 'Sí, cerrar sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);  
+              Toast.show({
+                type: 'success',
+                text1: 'Hasta pronto',
+                text2: 'Sesión cerrada correctamente.',
+                props: {
+                }
+              });
+              
+              setTimeout(() => {
+                navigation.replace('Login');
+              }, 1500);
+              
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Hubo un problema al cerrar sesión.'
+              });
+            }
           }
         }
-      });
-      
-      setTimeout(() => {
-        navigation.replace('Login');
-      }, 1500);
-      
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Hubo un problema al cerrar sesión.'
-      });
-    }
+      ],
+      {
+        cancelable: true,
+        onDismiss: () => {
+          Toast.show({
+            type: 'info',
+            text1: 'Sesión mantenida.',
+            text2: 'Continuas en AlmaCanina.',
+            visibilityTime: 2000,
+          });
+        }
+      }
+    );
   };
 
   const BotonNavegacion = ({ icon, texto, destino, tabNavigation }) => (
@@ -412,7 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 470,
+    width: 360,
     height: 100,
     shadowColor: '#000',
     shadowOpacity: 0.2,
