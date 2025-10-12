@@ -5,10 +5,10 @@ import {
   StyleSheet,
 } from 'react-native';
 
-export default function ProductScreen({ navigation }) {
+export default function PantallaPerfil({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Productoss</Text>
+      <Text style={styles.title}>Perfil</Text>
     </View>
   );
 }
