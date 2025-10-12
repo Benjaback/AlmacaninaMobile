@@ -1,14 +1,10 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 
 export default function ProductScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Productoss</Text>
+      <Text style={styles.title}>Productos</Text>
     </View>
   );
 }
