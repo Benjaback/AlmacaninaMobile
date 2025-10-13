@@ -5,7 +5,6 @@ export default function ProveedorScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Proveedores</Text>
-            <Text style={styles.subtitle}>Aquí puedes gestionar a los proveedores</Text>
         </View>
     );
 }
