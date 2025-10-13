@@ -9,7 +9,7 @@ export default function Cambiar({ navigation }) {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
 
-  // Función para recuperación por email
+  
   const handleEmailReset = async () => {
     setEmailError(''); // Limpiar errores previos
     
