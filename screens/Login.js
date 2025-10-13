@@ -6,19 +6,20 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
 import Toast from 'react-native-toast-message';
 
+
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [emailError, setEmailError] = useState('');
-
-  const handleLogin = async () => {
+/*este es de facu*/
+const handleLogin = async () => {
     if (!email || !password) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Por favor ingrese ambos campos.'
+        text1: '❌ Error',
+        text2: 'Todos los campos son obligatorios.',
       });
       return;
     }
