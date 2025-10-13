@@ -5,6 +5,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
 import Toast from 'react-native-toast-message';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 
 export default function Login({ navigation }) {
@@ -18,8 +19,13 @@ const handleLogin = async () => {
     if (!email || !password) {
       Toast.show({
         type: 'error',
+<<<<<<< HEAD
         text1: '❌ Error',
         text2: 'Todos los campos son obligatorios.',
+=======
+        text1: 'Error',
+        text2: 'Por favor complete los campos.'
+>>>>>>> e9987a62a6ce3dca653bf752a0606a580682f1c1
       });
       return;
     }
@@ -30,7 +36,7 @@ const handleLogin = async () => {
       setEmailError('');
       Toast.show({
         type: 'success',
-        text1: 'Login exitoso',
+        text1: 'Inicio de sesión exitoso',
         text2: 'Has iniciado sesión correctamente.',
         props: {
           style: { backgroundColor: '#8F08AA' }
@@ -38,9 +44,8 @@ const handleLogin = async () => {
       });
       
       setTimeout(() => {
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+        navigation.reset({ index: 0, routes: [{ name: 'Inicio' }] });
       }, 1500);
-      
     } catch (error) {
 
       setPasswordError('');
@@ -57,7 +62,7 @@ const handleLogin = async () => {
           setEmailError("No se encontró un usuario con este correo.");
           break;
         case 'auth/invalid-credential':
-          setPasswordError("Email o contraseña incorrectos");
+          setPasswordError("Email o contraseña incorrectos.");
           break;
         case 'auth/too-many-requests':
           Toast.show({
@@ -76,7 +81,7 @@ const handleLogin = async () => {
         default:
           Toast.show({
             type: 'error',
-            text1: 'Error de autenticación',
+            text1: 'Error de autenticación.',
             text2: `Código: ${error.code}`
           });
       }
@@ -103,6 +108,19 @@ const handleLogin = async () => {
         <View style={styles.overlay}>
           <Image source={require('../assets/logo.png')} style={styles.logo} />
           <Text style={styles.title}>Iniciar sesión</Text>
+
+          <View style={styles.socialIcon}>
+            <TouchableOpacity>
+              <AntDesign name="google" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <FontAwesome name="facebook-square" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <AntDesign name="apple" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+          </View>
+
         <Text style={styles.label}>Correo</Text>
         <View style={styles.inputContainer}>
           <FontAwesome name="envelope" size={20} color="#ccc" style={styles.icon} />
@@ -133,17 +151,22 @@ const handleLogin = async () => {
         </View>
         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
+        
+        <TouchableOpacity style={styles.contCambiarText} onPress={() => navigation.navigate('Cambiar')}>
+          <Text style={styles.cambiarText}>¿Olvidaste tu contraseña?</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Ingresar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-          <Text style={styles.signUpText}>¿No tienes cuenta aún? Regístrate</Text>
+          <Text style={styles.signUpText}>
+            ¿No estás registrado aún?
+            <Text style={styles.signUp}> Regístrate.</Text>
+          </Text>
         </TouchableOpacity>
         <View style={{ height: 20 }} />
-        <TouchableOpacity onPress={() => navigation.navigate('Cambiar')}>
-          <Text style={styles.cambiarText}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
@@ -170,7 +193,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    paddingVertical: 120,
+    paddingVertical: '20%', /* Altura del contenedor de login */
     backgroundColor: 'rgba(255, 255, 255, 1)',
     borderRadius: 20,
   },
@@ -220,13 +243,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   signUpText: {
-    marginTop: 20,
+    top: 25,
     color: '#007AFF',
   },
-  cambiarText: {
-    marginTop: 20,
+  signUp: { /* texto registrarse del singUpText */
     color: '#007AFF',
-    textAlign : 'center',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  contCambiarText:{ /* Contenedor de pregunta de olvidar contraseña*/
+    alignSelf: 'flex-end',
+  },
+  cambiarText: { /* Pregunta de olvidar contraseña */
+    marginTop: 5,
+    color: '#007AFF',
+    textAlign: 'center',
+  },
+  socialIcon:{ /* Contenedor de iconos de redes sociales */
+    flexDirection: 'row',
+  },
+  iconSocial:{ /* Iconos de redes sociales */
+    marginHorizontal: 15,
   },
   errorText: {
     color: '#B50000',
