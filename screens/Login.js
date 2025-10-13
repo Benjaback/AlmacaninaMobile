@@ -19,13 +19,8 @@ const handleLogin = async () => {
     if (!email || !password) {
       Toast.show({
         type: 'error',
-<<<<<<< HEAD
         text1: '❌ Error',
         text2: 'Todos los campos son obligatorios.',
-=======
-        text1: 'Error',
-        text2: 'Por favor complete los campos.'
->>>>>>> e9987a62a6ce3dca653bf752a0606a580682f1c1
       });
       return;
     }

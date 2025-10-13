@@ -29,66 +29,67 @@ function Home({ navigation, tabNavigation }) {
     });
     return unsubscribe;
   }, []);
-
+  /* Función para manejar el cierre de sesión con confirmación */
   const handleLogOut = async () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que deseas salir de AlmaCanina?\n\nTus datos estarán seguros y podrás volver cuando quieras.',
-      [
-        {
-          text: 'No, quedarme',
-          style: 'cancel',
-          onPress: () => {
-            Toast.show({
-              type: 'info',
-              text1: 'Sesión mantenida',
-              text2: 'Continuando en AlmaCanina...',
-              visibilityTime: 2000,
-            });
-          }
-        },
-        {
-          text: 'Sí, cerrar sesión',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut(auth);  
-              Toast.show({
-                type: 'success',
-                text1: 'Hasta pronto',
-                text2: 'Sesión cerrada correctamente.',
-                props: {
-                }
-              });
-              
-              setTimeout(() => {
-                navigation.replace('Login');
-              }, 1500);
-              
-            } catch (error) {
-              Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Hubo un problema al cerrar sesión.'
-              });
-            }
-          }
-        }
-      ],
+  Alert.alert(
+    '¿Salir de tu Cuenta?',
+    'Tu sesión actual se cerrará y podrás volver cuando lo desees.',
+    [
       {
-        cancelable: true,
-        onDismiss: () => {
+        text: 'Cancelar',
+        style: 'destructive',
+        onPress: () => {
           Toast.show({
             type: 'info',
-            text1: 'Sesión mantenida.',
-            text2: 'Continuas en AlmaCanina.',
+            text1: 'Tu sesión sigue activa 🐾',
+            text2:'¡Nos quedamos un rato más!',
             visibilityTime: 2000,
           });
         }
-      }
-    );
-  };
+      },
+      {
+        text: 'Salir',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut(auth);
+            Toast.show({
+              type: 'success',
+              text1: 'Sesión cerrada',
+              text2: '¡Vuelve Pronto! 🐶🐾',
+              visibilityTime: 2000,
+            });
 
+            setTimeout(() => {
+              navigation.replace('Login');
+            }, 1500);
+          } catch (error) {
+            Toast.show({
+              type: 'error',
+              text1: 'Ups...',
+              text2: 'No pudimos cerrar la sesión. Intentá nuevamente.',
+              visibilityTime: 2500,
+            });
+          }
+        }
+      }
+    ],
+    {
+      cancelable: true,
+      onDismiss: () => {
+        Toast.show({
+          type: 'info',
+          text1: 'Sesión mantenida',
+          text2: 'Continuás navegando en AlmaCanina 🐾',
+          visibilityTime: 2000,
+        });
+      }
+    }
+  );
+};
+
+
+  /* Componente para los botones de navegación */
   const BotonNavegacion = ({ icon, texto, destino, tabNavigation }) => (
     <View style={styles.BotonContainer}>
       <TouchableOpacity
