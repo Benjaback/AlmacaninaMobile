@@ -5,35 +5,45 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';  
 import Login from '../screens/Login';
 import SignUp from '../screens/SignUp';
-import Home from '../screens/Home';
+import Cambiar from '../screens/Cambiar';
+import HomeWithTabs from '../screens/Home';
+import PantallaProductos from '../screens/ProductScreen';
+import PantallaPerfil from '../screens/PerfilScreen';
+import PantallaProveedores from '../screens/ProveedorScreen';
+import PantallaEmpleados from '../screens/EmpleadosScreen';
 
 const Stack = createStackNavigator();
 
-function Navigation() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function Navegacion() {
+  const [estaAutenticado, setEstaAutenticado] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      if (user) {
-        setIsAuthenticated(true); 
+    const desuscribir = onAuthStateChanged(auth, usuario => {
+      if (usuario) {
+        setEstaAutenticado(true); 
       } else {
-        setIsAuthenticated(false); 
+        setEstaAutenticado(false); 
       }
     });
 
-    return () => unsubscribe();
+    return () => desuscribir();
   }, []);
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isAuthenticated ? "Home" : "Login"}>
+      <Stack.Navigator initialRouteName={estaAutenticado ? "Inicio" : "Login"}>
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="Cambiar" component={Cambiar} options={{ headerShown: false }} />
+        <Stack.Screen name="Inicio" component={HomeWithTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
+        <Stack.Screen name="Perfil" component={PantallaPerfil} options={{ title: 'Perfil' }} />
+        <Stack.Screen name="Proveedores" component={PantallaProveedores} options={{ title: 'Proveedores' }} />
+        <Stack.Screen name="Empleados" component={PantallaEmpleados} options={{ title: 'Empleados' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
 
-export default Navigation;
+export default Navegacion;
 

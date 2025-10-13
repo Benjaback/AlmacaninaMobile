@@ -4,6 +4,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { auth } from '../src/config/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import Toast from 'react-native-toast-message';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function SignUp({ navigation }) {
   const [firstName, setFirstName] = useState('');
@@ -13,57 +15,105 @@ export default function SignUp({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  
+  // Estados para validación de contraseña en tiempo real
+  const [passwordLength, setPasswordLength] = useState(false);
+  const [hasUppercase, setHasUppercase] = useState(false);
+  const [hasLowercase, setHasLowercase] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
+  
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+  const [firstNameSuccess, setFirstNameSuccess] = useState('');
+  const [lastNameSuccess, setLastNameSuccess] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [confirmPasswordSuccess, setConfirmPasswordSuccess] = useState('');
+
+  // Función para validar contraseña en tiempo real
+  const validatePassword = (text) => {
+    setPasswordLength(text.length >= 6);
+    setHasUppercase(/[A-Z]/.test(text));
+    setHasLowercase(/[a-z]/.test(text));
+    setHasNumber(/\d/.test(text));
+  };
 
   const handleSignUp = async () => {
-    if (!firstName || !lastName || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Todos los campos son obligatorios.");
+
+    setFirstNameError('');
+    setLastNameError('');
+    setEmailError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Todos los campos son obligatorios.'
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden.");
-      return;
-    }
-
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
-    if (!passwordRegex.test(password)) {
-      Alert.alert(
-        "Error",
-        "La contraseña debe tener al menos 6 caracteres, incluyendo una letra mayúscula, una minúscula y un número."
-      );
+      setConfirmPasswordError("Las contraseñas no coinciden.");
       return;
     }
 
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert("Registro exitoso", "Usuario registrado con éxito.");
+      Toast.show({
+        type: 'success',
+        text1: 'Registro exitoso',
+        text2: 'Usuario registrado con éxito.'
+      });
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); 
     } catch (error) {
-      let errorMessage = "Hubo un problema al registrar el usuario.";
+      setFirstNameError('');
+      setLastNameError('');
+      setEmailError('');
+      setPasswordError('');
+      setConfirmPasswordError('');
+      
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = "El correo electrónico ya está en uso.";
-          break;
+          setEmailError("El correo electrónico ya está en uso.");
+        break;
         case 'auth/invalid-email':
-          errorMessage = "El formato del correo electrónico no es válido.";
-          break;
+          setEmailError("El formato del correo electrónico no es válido.");
+        break;
         case 'auth/weak-password':
-          errorMessage = "La contraseña es demasiado débil.";
-          break;
+          setPasswordError("La contraseña es demasiado débil.");
+        break;
         case 'auth/network-request-failed':
-          errorMessage = "Error de conexión, por favor intenta más tarde.";
+          Toast.show({
+            type: 'error',
+            text1: 'Error de conexión',
+            text2: 'Por favor intenta más tarde.'
+          });
           break;
+        default:
+          Toast.show({
+            type: 'error',
+            text1: 'Error de registro',
+            text2: `No cumple com los requisitos.`
+          });
       }
-      Alert.alert("Error", errorMessage);
     }
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/fondoAM.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <>
+      <ImageBackground
+        source={require('../assets/fondoAM.jpg')}
+        style={styles.container}
+        resizeMode="cover"
+      >
       <KeyboardAwareScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -84,10 +134,22 @@ export default function SignUp({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="Ingrese su nombre"
-            value={firstName}
-            onChangeText={setFirstName}
-          />
-        </View>
+          value={firstName}
+          onChangeText={(text) => {
+            const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+            setFirstName(cleanedText);
+            if (!cleanedText.trim()) {
+              // setFirstNameError('Este campo es obligatorio.');
+              // setFirstNameSuccess('');
+            } else {
+              setFirstNameError('');
+              [/*setFirstNameSuccess('Campo válido');*/]
+            }
+          }}
+        />
+      </View>
+      {firstNameError ? <Text style={styles.errorText}>{firstNameError}</Text> : null}
+      {firstNameSuccess ? <Text style={styles.successText}>{firstNameSuccess}</Text> : null}
 
         <Text style={styles.label}>Apellido</Text>
         <View style={styles.inputContainer}>
@@ -96,9 +158,21 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su apellido"
             value={lastName}
-            onChangeText={setLastName}
+            onChangeText={(text) => {
+              const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+              setLastName(cleanedText);
+              if (!cleanedText.trim()) {
+                // setLastNameError('Este campo es obligatorio.');
+                // setLastNameSuccess('');
+              } else {
+                setLastNameError('');
+                [/*setLastNameSuccess('Campo válido');*/]
+              }
+            }}
           />
         </View>
+        {lastNameError ? <Text style={styles.errorText}>{lastNameError}</Text> : null}
+        {lastNameSuccess ? <Text style={styles.successText}>{lastNameSuccess}</Text> : null}
 
         <Text style={styles.label}>Correo</Text>
         <View style={styles.inputContainer}>
@@ -107,11 +181,30 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su correo"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+              setEmailSuccess('');
+            }}
+            onEndEditing={() => {
+              const emailRegex = /^[^\s@]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+              if (!email.trim()) {
+                // setEmailError('Este campo es obligatorio.');
+                // setEmailSuccess('');
+              } else if (!emailRegex.test(email)) {
+                setEmailError('El formato del correo electrónico no es válido.');
+                // setEmailSuccess('');
+              } else {
+                setEmailError('');
+                setEmailSuccess('Correo válido.');
+              }
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+        {emailSuccess ? <Text style={styles.successText}>{emailSuccess}</Text> : null}
 
         <Text style={styles.label}>Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -120,13 +213,99 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su contraseña"
             value={password}
-            onChangeText={setPassword}
+            onFocus={() => setShowPasswordRequirements(true)}
+            onChangeText={(text) => {
+              setPassword(text);
+              validatePassword(text);
+              
+              // Re-evaluar confirmPassword si ya hay algo escrito
+              if (confirmPassword) {
+                const allRequirementsMet = text.length >= 6 && /[A-Z]/.test(text) && /[a-z]/.test(text) && /\d/.test(text);
+                
+                if (confirmPassword === text && allRequirementsMet) {
+                  setConfirmPasswordError('');
+                  setConfirmPasswordSuccess('Las contraseñas coinciden.');
+                } else if (confirmPassword !== text) {
+                  setConfirmPasswordError('Las contraseñas no coinciden.');
+                  setConfirmPasswordSuccess('');
+                } else {
+                  setConfirmPasswordError('');
+                  setConfirmPasswordSuccess('');
+                }
+              }
+              
+              const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
+              if (!text.trim()) {
+                // setPasswordError('Este campo es obligatorio.');
+                // setPasswordSuccess('');
+              } else if (!passwordRegex.test(text)) {
+                setPasswordError('');
+                setPasswordSuccess('');
+              } else {
+                // setPasswordError('');
+                // setPasswordSuccess('Campo válido.');
+              }
+            }}
             secureTextEntry={!showPassword}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
+        
+        {/* Requisitos de contraseña */}
+        {showPasswordRequirements && (
+          <View style={styles.passwordRequirements}>
+            <Text style={styles.requirementsTitle}>La contraseña debe tener:</Text>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={passwordLength ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={passwordLength ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, passwordLength && styles.requirementMet]}>
+                Al menos 6 caracteres
+              </Text>
+            </View>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={hasUppercase ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={hasUppercase ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, hasUppercase && styles.requirementMet]}>
+                Incluir al menos una letra mayúscula
+              </Text>
+            </View>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={hasLowercase ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={hasLowercase ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, hasLowercase && styles.requirementMet]}>
+                Incluir al menos una letra minúscula
+              </Text>
+            </View>
+            
+            <View style={styles.requirementItem}>
+              <FontAwesome 
+                name={hasNumber ? "check-circle" : "circle-o"} 
+                size={16} 
+                color={hasNumber ? "#4CAF50" : "#ccc"} 
+              />
+              <Text style={[styles.requirementText, hasNumber && styles.requirementMet]}>
+                Incluir al menos un número
+              </Text>
+            </View>
+          </View>
+        )}
+        
+        {passwordError ? <Text style={passwordError === 'Este campo es obligatorio.' ? styles.errorText : styles.passwordErrorText}>{passwordError}</Text> : null}
+        {passwordSuccess ? <Text style={styles.successText}>{passwordSuccess}</Text> : null}
 
         <Text style={styles.label}>Confirmar Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -135,24 +314,59 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Confirme su contraseña"
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              // Verificar si todos los requisitos de contraseña están cumplidos
+              const allRequirementsMet = passwordLength && hasUppercase && hasLowercase && hasNumber;
+              
+              if (!text.trim()) {
+                // setConfirmPasswordError('Este campo es obligatorio.');
+                // setConfirmPasswordSuccess('');
+              } else if (text !== password) {
+                setConfirmPasswordError('Las contraseñas no coinciden.');
+                setConfirmPasswordSuccess('');
+              } else if (text === password && allRequirementsMet) {
+                setConfirmPasswordError('');
+                setConfirmPasswordSuccess('Las contraseñas coinciden.');
+              } else {
+                setConfirmPasswordError('');
+                setConfirmPasswordSuccess('');
+              }
+            }}
             secureTextEntry={!showConfirmPassword}
           />
           <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
             <FontAwesome name={showConfirmPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
+        {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+        {confirmPasswordSuccess ? <Text style={styles.successText}>{confirmPasswordSuccess}</Text> : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSignUp}>
           <Text style={styles.buttonText}>Registrarse</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.signUpText}>¿Ya tienes cuenta? Inicia sesión</Text>
+        <TouchableOpacity style={styles.contCambiarText} onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.cambiarText}>¿Ya estás registrado?
+            <Text style={styles.signUp}> Inicia sesión.</Text>
+          </Text>
         </TouchableOpacity>
+
         </View>
       </KeyboardAwareScrollView>
+      
+      {/* Botón Atrás en esquina superior izquierda */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.navigate('Login')}
+      >
+        <View style={styles.iconContainer}>
+          <MaterialIcons name="exit-to-app" size={35} color="black" />
+        </View>
+      </TouchableOpacity>
     </ImageBackground>
+    <Toast />
+    </>
   );
 }
 
@@ -174,7 +388,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: 70,
+    backgroundColor: 'rgba(255, 255, 255, 1)',
     borderRadius: 20,
   },
   
@@ -216,6 +431,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 5,
     marginTop: 10,
+    borderRadius: 20,
   },
   buttonText: {
     color: '#fff',
@@ -226,5 +442,86 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: '#007AFF',
   },
+  errorText: {
+    color: '#B50000',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+  successText: {
+    color: 'green',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+  passwordErrorText: {
+    color: '#6e6c6cff',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '100%',
+  },
+  passwordRequirements: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 5,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: 8,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginLeft: 8,
+  },
+  requirementMet: {
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+  },
+  iconContainer: {
+    transform: [{ rotate: '180deg' }],
+  },
+  backText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contCambiarText: {
+    top: 30,
+  },
+  cambiarText: {
+    color: '#007AFF',
+  },
+  signUp:{
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  }
 });
 
