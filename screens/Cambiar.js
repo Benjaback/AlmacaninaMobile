@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Linking } from 'react-native';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
 import Toast from 'react-native-toast-message';
+import { Image, ImageBackground } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 export default function Cambiar({ navigation }) {
   const [loading, setLoading] = useState(false);
@@ -26,10 +28,9 @@ export default function Cambiar({ navigation }) {
         text1: 'Email enviado',
         text2: 'Revisa tu correo para restablecer la contraseña'
       });
-      // Navegar de vuelta al login después de un tiempo
       setTimeout(() => {
         navigation.goBack();
-      }, 2000);
+      }, 3500);
     } catch (error) {
       switch (error.code) {
         case 'auth/user-not-found':
@@ -64,53 +65,62 @@ export default function Cambiar({ navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, padding: 20, backgroundColor: '#fff' }}>
-      <Text style={{ fontSize: 24, marginBottom: 20 }}>Recuperar Contraseña</Text>
-      
-      <Text style={{ marginBottom: 10, fontSize: 16 }}>
-        Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
-      </Text>
-      
-      <Text style={{ marginBottom: 10 }}>Email:</Text>
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Ingresa tu email"
-        keyboardType="email-address"
-        style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 5 }}
-      />
-      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-      
-      <TouchableOpacity 
-        onPress={handleEmailReset}
-        disabled={loading}
-        style={{ 
-          backgroundColor: loading ? '#ccc' : '#007bff', 
-          padding: 15, 
-          alignItems: 'center',
-          marginBottom: 20
-        }}
+    <ImageBackground
+      source={require('../assets/fondoAM.jpg')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <KeyboardAwareScrollView 
+        style={{flex: 1, width: '100%'}} 
+        contentContainerStyle={{flexGrow: 1, justifyContent: 'center', alignItems: 'center'}} 
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraHeight={120}
+        extraScrollHeight={120}
+        showsVerticalScrollIndicator={false}
+        resetScrollToCoords={{ x: 0, y: 0 }}
       >
-        <Text style={{ color: '#fff' }}>
-          {loading ? 'Enviando...' : 'Enviar Email de Recuperación'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Botón para volver */}
-      <TouchableOpacity 
-        onPress={() => navigation.goBack()}
-        style={{ 
-          backgroundColor: '#6c757d', 
-          padding: 15, 
-          alignItems: 'center',
-          marginTop: 20
-        }}
-      >
-        <Text style={{ color: '#fff' }}>Volver al Login</Text>
-      </TouchableOpacity>
-
+        <View style={styles.overlay}>
+          <Image source={require('../assets/logoAM.png')} style={styles.logo} />
+          <Text style={styles.title}>Recuperar Contraseña</Text>
+          <Text style={styles.label}>Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Ingresa tu email"
+              keyboardType="email-address"
+              style={styles.input}
+            />
+          </View>
+          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+          <TouchableOpacity 
+            onPress={handleEmailReset}
+            disabled={loading}
+            style={[styles.button, loading && { backgroundColor: '#ccc' }]}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? 'Enviando...' : 'Enviar Email '}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backButtonText}>Volver al Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={handleEmailReset}
+            disabled={loading}
+            style={{ alignSelf: 'center', marginTop: 8 }}
+          >
+            <Text style={{ color: '#007bff', fontSize: 13, textDecorationLine: 'underline', textAlign: 'center' }}>Volver a mandar Email</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
       <Toast />
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -120,5 +130,88 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 15,
     alignSelf: 'flex-start',
+  },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    width: '90%',
+    maxWidth: 350,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.98)',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  logo: {
+    width: 70,
+    height: 70,
+    marginBottom: 10,
+    backgroundColor: 'transparent',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#8F08AA',
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: '#8F08AA',
+    marginBottom: 15,
+    width: '100%',
+    backgroundColor: 'transparent',
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    fontSize: 15,
+    paddingHorizontal: 10,
+    backgroundColor: 'transparent',
+  },
+  button: {
+    backgroundColor: '#8F08AA',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    marginTop: 10,
+    marginBottom: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  backButton: {
+    backgroundColor: '#6c757d',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    marginTop: 5,
+    width: '100%',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
 });
