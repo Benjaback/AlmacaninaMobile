@@ -9,6 +9,7 @@ import Cambiar from '../screens/Cambiar';
 import HomeWithTabs from '../screens/Home';
 import PantallaProductos from '../screens/ProductScreen';
 import PantallaPerfil from '../screens/PerfilScreen';
+import EditarPerfilScreen from '../screens/EditarPerfilScreen';
 import PantallaProveedores from '../screens/ProveedorScreen';
 import PantallaEmpleados from '../screens/EmpleadosScreen';
 
@@ -38,6 +39,7 @@ function Navegacion() {
         <Stack.Screen name="Inicio" component={HomeWithTabs} options={{ headerShown: false }} />
         <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
         <Stack.Screen name="Perfil" component={PantallaPerfil} options={{ title: 'Perfil' }} />
+        <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Proveedores" component={PantallaProveedores} options={{ title: 'Proveedores' }} />
         <Stack.Screen name="Empleados" component={PantallaEmpleados} options={{ title: 'Empleados' }} />
       </Stack.Navigator>

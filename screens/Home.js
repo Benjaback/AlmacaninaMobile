@@ -135,13 +135,20 @@ function Home({ navigation, tabNavigation }) {
             <View>
               <View>
                 <TouchableOpacity onPress={() => {
-                  // Navegar a la pestaña PRODUCTOS del TabNavigator
-                  if (tabNavigation) {
-                    tabNavigation.navigate('PRODUCTOS');
+                  // Navegar a la pantalla de productos directamente
+                  try {
+                    const parentNav = navigation && navigation.getParent ? navigation.getParent() : null;
+                    if (parentNav && parentNav.navigate) {
+                      parentNav.navigate('GestionarProductos');
+                    } else if (navigation && navigation.navigate) {
+                      navigation.navigate('GestionarProductos');
                     }
-                  }}>
+                  } catch (e) {
+                    navigation && navigation.navigate && navigation.navigate('GestionarProductos');
+                  }
+                }}>
                   <View style={styles.menuContainer}>
-                    <BotonNavegacion icon="inbox" texto="Productos" destino="PRODUCTOS" tabNavigation={tabNavigation} />
+                    <BotonNavegacion icon="inbox" texto="Productos" destino="GestionarProductos" navigation={navigation} />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -207,22 +214,6 @@ function InicioScreen({ navigation }) {
   );
 }
 
-function ProductosScreen({ navigation }) {
-  return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <ProductScreen navigation={navigation} />
-    </View>
-  );
-}
-
-function NotificacionesScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Notificaciones</Text>
-      <Text style={styles.screenSubtitle}>Mantente al día con las últimas notificaciones</Text>
-    </View>
-  );
-}
 
 function PerfilScreen({ navigation }) {
   return (
@@ -232,21 +223,7 @@ function PerfilScreen({ navigation }) {
   );
 }
 
-function ProveedorScreen({ navigation }) {
-  return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <PantallaProveedor navigation={navigation} />
-    </View>
-  );
-}
 
-function EmpleadoScreen({ navigation }) {
-  return(
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <EmpleadosScreen navigation={navigation} />
-    </View>
-  );
-}
 
 // Configuración del Tab Navigator
 const Tab = createBottomTabNavigator();
@@ -276,15 +253,6 @@ export default function HomeWithTabs() {
         options={{
           tabBarIcon: ({ color }) => (
             <Ionicons name="home" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="PRODUCTOS"
-        component={ProductosScreen}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <AntDesign name="inbox" size={24} color={color} />
           ),
         }}
       />
