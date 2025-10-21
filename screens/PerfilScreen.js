@@ -313,7 +313,7 @@ export default function PantallaPerfil({ navigation }) {
           <MenuItem
             icon="user"
             title="Editar Perfil"
-            subtitle="Cambiar nombre, email y datos personales"
+            subtitle="Cambiar nombre, apellido y datos personales"
             onPress={() => navigation.navigate('EditarPerfil')}
           />
           
@@ -332,7 +332,7 @@ export default function PantallaPerfil({ navigation }) {
           <MenuItem
             icon="info-circle"
             title="Acerca de AlmaCanina"
-            subtitle="Versión: beta"
+            subtitle="Versión beta"
             onPress={() => {/* Mostrar la info de acerca de AlmaCanina */}}
           />
           
