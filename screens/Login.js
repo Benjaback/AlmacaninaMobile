@@ -4,48 +4,92 @@ import { FontAwesome } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
+import Toast from 'react-native-toast-message';
+import AntDesign from '@expo/vector-icons/AntDesign';
+
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  const handleLogin = async () => {
+  const [passwordError, setPasswordError] = useState('');
+  const [emailError, setEmailError] = useState('');
+/*este es de facu*/
+const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Por favor ingrese ambos campos.");
+      Toast.show({
+        type: 'error',
+        text1: '❌ Error',
+        text2: 'Todos los campos son obligatorios.',
+      });
       return;
     }
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert("Login exitoso", "Has iniciado sesión correctamente.");
-      navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); 
+      setPasswordError('');
+      setEmailError('');
+      Toast.show({
+        type: 'success',
+        text1: 'Inicio de sesión exitoso',
+        text2: 'Has iniciado sesión correctamente.',
+        props: {
+          style: { backgroundColor: '#8F08AA' }
+        }
+      });
+      
+      setTimeout(() => {
+        navigation.reset({ index: 0, routes: [{ name: 'Inicio' }] });
+      }, 1500);
     } catch (error) {
-      let errorMessage = "Hubo un problema al iniciar sesión.";
+
+      setPasswordError('');
+      setEmailError('');
+      
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = "El formato del correo electrónico no es válido.";
+          setEmailError("El formato del correo electrónico no es válido.");
           break;
         case 'auth/wrong-password':
-          errorMessage = "La contraseña es incorrecta.";
+          setPasswordError("Contraseña incorrecta");
           break;
         case 'auth/user-not-found':
-          errorMessage = "No se encontró un usuario con este correo.";
+          setEmailError("No se encontró un usuario con este correo.");
+          break;
+        case 'auth/invalid-credential':
+          setPasswordError("Email o contraseña incorrectos.");
+          break;
+        case 'auth/too-many-requests':
+          Toast.show({
+            type: 'error',
+            text1: 'Demasiados intentos',
+            text2: 'Espera un momento antes de intentar nuevamente.'
+          });
           break;
         case 'auth/network-request-failed':
-          errorMessage = "Error de conexión, por favor intenta más tarde.";
+          Toast.show({
+            type: 'error',
+            text1: 'Error de conexión',
+            text2: 'Por favor intenta más tarde.'
+          });
           break;
+        default:
+          Toast.show({
+            type: 'error',
+            text1: 'Error de autenticación.',
+            text2: `Código: ${error.code}`
+          });
       }
-      Alert.alert("Error", errorMessage);
     }
   };
 
   return (
-    <ImageBackground
-      source={require('../assets/fondoAM.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <>
+      <ImageBackground
+        source={require('../assets/fondoAM.jpg')}
+        style={styles.container}
+        resizeMode="cover"
+      >
       <KeyboardAwareScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -59,6 +103,19 @@ export default function Login({ navigation }) {
         <View style={styles.overlay}>
           <Image source={require('../assets/logo.png')} style={styles.logo} />
           <Text style={styles.title}>Iniciar sesión</Text>
+
+          <View style={styles.socialIcon}>
+            <TouchableOpacity>
+              <AntDesign name="google" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <FontAwesome name="facebook-square" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <AntDesign name="apple" style={styles.iconSocial} size={30} color="black" />
+            </TouchableOpacity>
+          </View>
+
         <Text style={styles.label}>Correo</Text>
         <View style={styles.inputContainer}>
           <FontAwesome name="envelope" size={20} color="#ccc" style={styles.icon} />
@@ -71,6 +128,7 @@ export default function Login({ navigation }) {
             autoCapitalize="none"
           />
         </View>
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
         <Text style={styles.label}>Contraseña</Text>
         <View style={styles.inputContainer}>
@@ -86,17 +144,29 @@ export default function Login({ navigation }) {
             <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
+        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+
+        
+        <TouchableOpacity style={styles.contCambiarText} onPress={() => navigation.navigate('Cambiar')}>
+          <Text style={styles.cambiarText}>¿Olvidaste tu contraseña?</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Ingresar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-          <Text style={styles.signUpText}>¿No tienes cuenta aún? Regístrate</Text>
+          <Text style={styles.signUpText}>
+            ¿No estás registrado aún?
+            <Text style={styles.signUp}> Regístrate.</Text>
+          </Text>
         </TouchableOpacity>
+        <View style={{ height: 20 }} />
         </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
+    <Toast />
+    </>
   );
 }
 
@@ -118,8 +188,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    paddingVertical: 150,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingVertical: '20%', /* Altura del contenedor de login */
+    backgroundColor: 'rgba(255, 255, 255, 1)',
     borderRadius: 20,
   },
   logo: {
@@ -160,6 +230,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 5,
     marginTop: 20,
+    borderRadius: 20,
   },
   buttonText: {
     color: '#fff',
@@ -167,7 +238,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   signUpText: {
-    marginTop: 20,
+    top: 25,
     color: '#007AFF',
+  },
+  signUp: { /* texto registrarse del singUpText */
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  contCambiarText:{ /* Contenedor de pregunta de olvidar contraseña*/
+    alignSelf: 'flex-end',
+  },
+  cambiarText: { /* Pregunta de olvidar contraseña */
+    marginTop: 5,
+    color: '#007AFF',
+    textAlign: 'center',
+  },
+  socialIcon:{ /* Contenedor de iconos de redes sociales */
+    flexDirection: 'row',
+  },
+  iconSocial:{ /* Iconos de redes sociales */
+    marginHorizontal: 15,
+  },
+  errorText: {
+    color: '#B50000',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
   },
 });

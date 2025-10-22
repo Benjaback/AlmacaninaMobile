@@ -7,20 +7,36 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "permissions": [
+      "CAMERA",
+      "CAMERA_ROLL",
+      "MEDIA_LIBRARY"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "AlmaCanina necesita acceso a la cámara para tomar fotos.",
+        "NSPhotoLibraryUsageDescription": "AlmaCanina necesita acceso a tu galería para seleccionar fotos.",
+        "NSPhotoLibraryAddUsageDescription": "AlmaCanina puede guardar fotos en tu galería después de tomarlas."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
