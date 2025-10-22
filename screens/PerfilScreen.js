@@ -312,8 +312,8 @@ export default function PantallaPerfil({ navigation }) {
           
           <MenuItem
             icon="user"
-            title="Editar Perfil"
-            subtitle="Cambiar nombre, apellido y datos personales"
+            title="Ver Perfil"
+            subtitle="Ver nombre, apellido y datos personales"
             onPress={() => navigation.navigate('EditarPerfil')}
           />
           
