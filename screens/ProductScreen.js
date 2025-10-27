@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../src/config/firebaseConfig';
 
 // ✅ Activar animaciones en Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -25,17 +27,36 @@ export default function ProductScreen({ navigation, route }) {
   const [filterOption, setFilterOption] = useState('Todos');
   const [products, setProducts] = useState([]);
 
-  // ✅ Agregar producto nuevo con animación
+  // Suscripción en tiempo real a Firestore -> colección 'products'
   useEffect(() => {
-    if (route.params?.nuevoProducto) {
-      const nuevo = route.params.nuevoProducto;
-      if (!products.find(p => p.id === nuevo.id)) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setProducts([nuevo, ...products]);
-        navigation.setParams({ nuevoProducto: null });
+    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const items = [];
+        querySnapshot.forEach((d) => {
+          const data = d.data();
+          items.push({
+            id: d.id,
+            name: data.name || '',
+            price: data.price ?? '',
+            stock: data.stock ?? 0,
+            status: data.status || '',
+            description: data.description || '',
+            // soportar ambos campos: imageUri (desde Create) o image
+            image: data.imageUri || data.image || null,
+          });
+        });
+        setProducts(items);
+      },
+      (error) => {
+        console.error('Error fetching products:', error);
+        Alert.alert('Error', 'No se pudieron cargar los productos.');
       }
-    }
-  }, [route.params?.nuevoProducto]);
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   const handleAddProduct = () => {
     navigation.navigate('CrearProducto');
@@ -54,16 +75,21 @@ export default function ProductScreen({ navigation, route }) {
     const product = products.find((p) => p.id === id);
     Alert.alert(
       'Confirmar eliminación',
-      `¿Desea borrar el producto "${product.name}"?`,
+      `¿Desea borrar el producto "${product ? product.name : id}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            const updated = products.filter((p) => p.id !== id);
-            setProducts(updated);
+          onPress: async () => {
+            try {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              // Eliminar en Firestore
+              await deleteDoc(doc(db, 'products', id));
+            } catch (error) {
+              console.error('Error eliminando producto:', error);
+              Alert.alert('Error', 'No se pudo eliminar el producto.');
+            }
           },
         },
       ]

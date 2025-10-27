@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../src/config/firebaseConfig';
+import Toast from 'react-native-toast-message';
 
 export default function CrearProductoScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -19,6 +22,26 @@ export default function CrearProductoScreen({ navigation }) {
   const [status, setStatus] = useState('Activo');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  // Estados para errores (como en Login)
+  const [nameError, setNameError] = useState('');
+  const [priceError, setPriceError] = useState('');
+  const [stockError, setStockError] = useState('');
+
+  // Función para validar y filtrar el nombre en tiempo real
+  const handleNameChange = (text) => {
+    // Permitir solo letras, espacios y acentos
+    const filteredText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+    setName(filteredText);
+  };
+
+  // Función para validar y filtrar el stock en tiempo real
+  const handleStockChange = (text) => {
+    // Permitir solo números enteros (sin puntos ni comas)
+    const filteredText = text.replace(/[^0-9]/g, '');
+    setStock(filteredText);
+  };
 
   const handleSelectImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -32,24 +55,156 @@ export default function CrearProductoScreen({ navigation }) {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Limpiar errores anteriores
+    setNameError('');
+    setPriceError('');
+    setStockError('');
+
+    // Validación de campos obligatorios
     if (!name || !price || !stock) {
-      Alert.alert('Campos incompletos', 'Por favor completá nombre, precio y stock.');
+      Toast.show({
+        type: 'error',
+        text1: 'Campos incompletos',
+        text2: 'Por favor completá los campos requeridos.',
+      });
       return;
     }
 
-    const nuevoProducto = {
-      id: Date.now().toString(),
-      name,
-      price,
-      stock: parseInt(stock),
-      status,
-      image: imageUri,
-      description,
-    };
+    // Validación del nombre del producto (solo letras y espacios)
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    if (!nameRegex.test(name.trim())) {
+      const error = new Error('Invalid name');
+      error.code = 'INVALID_NAME';
+      
+      switch (error.code) {
+        case 'INVALID_NAME':
+          setNameError('El nombre del producto solo puede contener letras y espacios.');
+          break;
+        default:
+          setNameError('Nombre inválido');
+          break;
+      }
+      return;
+    }
 
-    Alert.alert('Producto creado', `Se agregó: ${name}`);
-    navigation.navigate('ProductScreen', { nuevoProducto });
+    // Validación de números
+    if (price === '' || isNaN(price) || parseFloat(price) <= 0) {
+      // Crear error con código específico según el tipo de problema
+      const error = new Error('Invalid price value');
+      
+      if (price === '' || isNaN(price)) {
+        error.code = 'PRICE_NOT_NUMBER';
+      } else if (parseFloat(price) <= 0) {
+        error.code = 'PRICE_ZERO_OR_NEGATIVE';
+      } else {
+        error.code = 'INVALID_PRICE';
+      }
+      
+      switch (error.code) {
+        case 'PRICE_NOT_NUMBER':
+          setPriceError('El precio debe ser un número');
+          break;
+        case 'PRICE_ZERO_OR_NEGATIVE':
+          setPriceError('El precio debe ser mayor a 0');
+          break;
+        case 'INVALID_PRICE':
+          setPriceError('Precio inválido');
+          break;
+        default:
+          setPriceError('Error en el precio');
+          break;
+      }
+      return;
+    }
+
+    if (stock === '' || isNaN(stock) || parseInt(stock) < 0) {
+      // Crear error con código específico según el tipo de problema
+      const error = new Error('Invalid stock value');
+      
+      if (stock === '' || isNaN(stock)) {
+        error.code = 'STOCK_NOT_NUMBER';
+      } else if (parseInt(stock) < 0) {
+        error.code = 'STOCK_NEGATIVE';
+      } else {
+        error.code = 'INVALID_STOCK';
+      }
+      
+      switch (error.code) {
+        case 'STOCK_NOT_NUMBER':
+          setStockError('El stock debe ser un número');
+          break;
+        case 'STOCK_NEGATIVE':
+          setStockError('El stock debe ser mayor o igual a 0');
+          break;
+        case 'INVALID_STOCK':
+          setStockError('Stock inválido');
+          break;
+        default:
+          setStockError('Error en el stock');
+          break;
+      }
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Crear objeto producto (sin imagen por ahora)
+      const nuevoProducto = {
+        name: name.trim(),
+        price: parseFloat(price),
+        stock: parseInt(stock),
+        status,
+        description: description.trim(),
+        imageUri: imageUri || null, // Guardar URI local por ahora
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      // Guardar en Firestore
+      console.log('Guardando producto en Firestore...');
+      const docRef = await addDoc(collection(db, 'products'), nuevoProducto);
+      console.log('Producto guardado con ID:', docRef.id);
+
+      // Limpiar errores al guardar exitosamente
+      setNameError('');
+      setPriceError('');
+      setStockError('');
+
+      // Éxito
+      Toast.show({
+        type: 'success',
+        text1: 'Producto creado',
+        text2: `${name} se agregó correctamente`,
+        props: {
+          style: { backgroundColor: '#8F08AA' }
+        }
+      });
+
+      // Limpiar formulario
+      setName('');
+      setPrice('');
+      setStock('');
+      setDescription('');
+      setImageUri(null);
+      setStatus('Activo');
+      
+      // Volver atrás después de un delay para que se vea el toast
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error guardando producto:', error);
+      Toast.show({
+        type: 'error',
+        text1: '❌ Error al guardar',
+        text2: 'No se pudo guardar el producto. Inténtalo de nuevo.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -57,7 +212,8 @@ export default function CrearProductoScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <>
+      <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>CREAR PRODUCTO</Text>
 
       {imageUri ? (
@@ -74,8 +230,10 @@ export default function CrearProductoScreen({ navigation }) {
         style={styles.input}
         placeholder="Nombre del Producto"
         value={name}
-        onChangeText={setName}
+        onChangeText={handleNameChange}
+        maxLength={50}
       />
+      {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
       <TextInput
         style={styles.input}
@@ -84,14 +242,17 @@ export default function CrearProductoScreen({ navigation }) {
         value={price}
         onChangeText={setPrice}
       />
+      {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
 
       <TextInput
         style={styles.input}
         placeholder="Stock"
         keyboardType="numeric"
         value={stock}
-        onChangeText={setStock}
+        onChangeText={handleStockChange}
+        maxLength={10}
       />
+      {stockError ? <Text style={styles.errorText}>{stockError}</Text> : null}
 
       <View style={styles.pickerContainer}>
         <Picker
@@ -112,14 +273,22 @@ export default function CrearProductoScreen({ navigation }) {
       />
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.buttonText}>GUARDAR</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+          onPress={handleSave}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'GUARDANDO...' : 'GUARDAR'}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
           <Text style={styles.buttonText}>CANCELAR</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
+    <Toast />
+    </>
   );
 }
 
@@ -129,6 +298,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#6A1B9A',
+    marginTop: 30,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -180,6 +350,10 @@ const styles = StyleSheet.create({
     width: '48%',
     alignItems: 'center',
   },
+  saveButtonDisabled: {
+    backgroundColor: '#D3D3D3',
+    opacity: 0.7,
+  },
   cancelButton: {
     backgroundColor: '#D32F2F',
     padding: 12,
@@ -188,4 +362,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  errorText: {
+    color: '#B50000',
+    fontSize: 12,
+    marginTop: -15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
 });
