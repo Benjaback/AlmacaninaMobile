@@ -7,10 +7,14 @@ import {
   ScrollView,
   Image,
   Alert,
+  Modal,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,6 +29,15 @@ export default function PantallaPerfil({ navigation }) {
   
   // Estados para ImagePicker
   const [userImage, setUserImage] = useState(null);
+  // Estados para cambio de contraseña
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [changeLoading, setChangeLoading] = useState(false);
 
   // Función para generar iniciales del nombre
   const getInitials = (name) => {
@@ -321,7 +334,7 @@ export default function PantallaPerfil({ navigation }) {
             icon="lock"
             title="Cambiar Contraseña"
             subtitle="Actualizar tu contraseña de acceso"
-            onPress={() => {/* Navegar a pantalla de cambio de contraseña */}}
+            onPress={() => { setModalVisible(true); }}
           />
         </View>
 
@@ -357,6 +370,142 @@ export default function PantallaPerfil({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Modal para cambio de contraseña */}
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => { if (!changeLoading) setModalVisible(false); }}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalContainer}>
+              <KeyboardAwareScrollView
+                style={{ width: '100%' }}
+                contentContainerStyle={{ flexGrow: 1 }}
+                keyboardShouldPersistTaps="handled"
+                enableOnAndroid={true}
+                enableAutomaticScroll={true}
+                extraHeight={120}
+                extraScrollHeight={120}
+                resetScrollToCoords={{ x: 0, y: 0 }}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.modalTitle}>Cambiar Contraseña</Text>
+                <Text style={styles.modalText}>Ingresa tu contraseña actual y la nueva contraseña.</Text>
+
+                <Text style={styles.inputLabel}>Contraseña actual</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    placeholder="Contraseña actual"
+                    secureTextEntry={!showCurrent}
+                    style={styles.inputField}
+                    editable={!changeLoading}
+                  />
+                  <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)} style={styles.showBtn}>
+                    <Text style={styles.showText}>{showCurrent ? 'Ocultar' : 'Mostrar'}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.inputLabel}>Nueva contraseña</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Nueva contraseña"
+                    secureTextEntry={!showNew}
+                    style={styles.inputField}
+                    editable={!changeLoading}
+                  />
+                  <TouchableOpacity onPress={() => setShowNew(!showNew)} style={styles.showBtn}>
+                    <Text style={styles.showText}>{showNew ? 'Ocultar' : 'Mostrar'}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                  <Text style={styles.inputLabel}>Confirmar nueva contraseña</Text>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Confirmar contraseña"
+                      secureTextEntry={!showConfirm}
+                      style={[styles.inputField, { marginBottom: 10 }]}
+                      editable={!changeLoading}
+                    />
+                    <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.showBtn}>
+                      <Text style={styles.showText}>{showConfirm ? 'Ocultar' : 'Mostrar'}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonSecondary]}
+                    onPress={() => { if (!changeLoading) setModalVisible(false); }}
+                    disabled={changeLoading}
+                  >
+                    <Text style={styles.modalButtonText}>Cancelar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.modalButtonPrimary]}
+                    onPress={async () => {
+                      // Validaciones básicas
+                      if (!currentPassword || !newPassword || !confirmPassword) {
+                        Toast.show({ type: 'error', text1: 'Completa todos los campos' });
+                        return;
+                      }
+                      if (newPassword.length < 6) {
+                        Toast.show({ type: 'error', text1: 'La contraseña debe tener al menos 6 caracteres' });
+                        return;
+                      }
+                      if (newPassword !== confirmPassword) {
+                        Toast.show({ type: 'error', text1: 'Las contraseñas no coinciden' });
+                        return;
+                      }
+
+                      const user = auth.currentUser;
+                      if (!user || !user.email) {
+                        Toast.show({ type: 'error', text1: 'No se encontró usuario autenticado' });
+                        return;
+                      }
+
+                      setChangeLoading(true);
+                      try {
+                        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                        await reauthenticateWithCredential(user, credential);
+                        await updatePassword(user, newPassword);
+                        Toast.show({ type: 'success', text1: 'Contraseña actualizada' });
+                        setModalVisible(false);
+                        // limpiar campos
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      } catch (err) {
+                        console.log('Error cambiar contraseña:', err);
+                        // Mapear códigos comunes
+                        const code = err.code || '';
+                        if (code.includes('wrong-password') || code.includes('auth/wrong-password')) {
+                          Toast.show({ type: 'error', text1: 'Contraseña actual incorrecta' });
+                        } else if (code.includes('weak-password') || code.includes('auth/weak-password')) {
+                          Toast.show({ type: 'error', text1: 'La nueva contraseña es muy débil' });
+                        } else if (code.includes('requires-recent-login') || code.includes('auth/requires-recent-login')) {
+                          Toast.show({ type: 'error', text1: 'Vuelve a iniciar sesión o usa recuperar contraseña' });
+                        } else {
+                          Toast.show({ type: 'error', text1: 'Error al cambiar la contraseña' });
+                        }
+                      }
+                      setChangeLoading(false);
+                    }}
+                    disabled={changeLoading}
+                  >
+                    {changeLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalButtonText}>Guardar</Text>}
+                  </TouchableOpacity>
+                </View>
+              </KeyboardAwareScrollView>
+            </View>
+          </View>
+        </Modal>
         {/* Espaciado inferior */}
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -400,6 +549,94 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#FFD700',
+  },
+  // estilos modal cambio contraseña
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    elevation: 8,
+    maxHeight: '80%',
+    // ensure inputs expand full width
+    alignItems: 'stretch',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#8F08AA',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: '#444',
+    marginTop: 6,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inputField: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#e6d9f4',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 6,
+    marginBottom: 8,
+    backgroundColor: '#fbf7ff',
+    fontSize: 14,
+  },
+  showBtn: {
+    marginLeft: 8,
+    padding: 6,
+  },
+  showText: {
+    color: '#8F08AA',
+    fontSize: 12,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 6,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#8F08AA',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#6c757d',
   },
   avatarText: {
     fontSize: 36,
