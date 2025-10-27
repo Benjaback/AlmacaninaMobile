@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, ImageBackground } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { auth } from '../src/config/firebaseConfig';
+import { auth, db } from '../src/config/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -66,7 +67,22 @@ export default function SignUp({ navigation }) {
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Crear documento del usuario en Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.toLowerCase().trim(),
+        fullName: `${firstName.trim()} ${lastName.trim()}`,
+        createdAt: new Date().toISOString(),
+        dni: '', // Campo vacío inicialmente - se puede agregar en editar perfil
+        phone: '', // Campo vacío inicialmente - se puede agregar en editar perfil
+        updatedAt: new Date().toISOString()
+      });
+      
       Toast.show({
         type: 'success',
         text1: 'Registro exitoso',
