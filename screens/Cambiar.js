@@ -105,17 +105,17 @@ export default function Cambiar({ navigation }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Text style={styles.backButtonText}>Volver al Login</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
             onPress={handleEmailReset}
             disabled={loading}
+            style={styles.backButton}
+          >
+            <Text style={styles.backButtonText}>Volver a mandar Email</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()}
             style={{ alignSelf: 'center', marginTop: 8 }}
           >
-            <Text style={{ color: '#007bff', fontSize: 13, textDecorationLine: 'underline', textAlign: 'center' }}>Volver a mandar Email</Text>
+            <Text style={{ color: '#007bff', fontSize: 13, textDecorationLine: 'underline', textAlign: 'center' }}>Volver al Login</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
