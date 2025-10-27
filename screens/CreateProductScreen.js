@@ -19,6 +19,7 @@ export default function CrearProductoScreen({ navigation }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
+  const [minStock, setMinStock] = useState('');
   const [status, setStatus] = useState('Activo');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState(null);
@@ -28,6 +29,7 @@ export default function CrearProductoScreen({ navigation }) {
   const [nameError, setNameError] = useState('');
   const [priceError, setPriceError] = useState('');
   const [stockError, setStockError] = useState('');
+  const [minStockError, setMinStockError] = useState('');
 
   // Función para validar y filtrar el nombre en tiempo real
   const handleNameChange = (text) => {
@@ -41,6 +43,13 @@ export default function CrearProductoScreen({ navigation }) {
     // Permitir solo números enteros (sin puntos ni comas)
     const filteredText = text.replace(/[^0-9]/g, '');
     setStock(filteredText);
+  };
+
+  // Función para validar y filtrar el stock mínimo en tiempo real
+  const handleMinStockChange = (text) => {
+    // Permitir solo números enteros (sin puntos ni comas)
+    const filteredText = text.replace(/[^0-9]/g, '');
+    setMinStock(filteredText);
   };
 
   const handleSelectImage = async () => {
@@ -60,6 +69,7 @@ export default function CrearProductoScreen({ navigation }) {
     setNameError('');
     setPriceError('');
     setStockError('');
+    setMinStockError('');
 
     // Validación de campos obligatorios
     if (!name || !price || !stock) {
@@ -147,6 +157,41 @@ export default function CrearProductoScreen({ navigation }) {
       return;
     }
 
+    // Validación de stock mínimo (opcional, pero si se ingresa debe ser válido)
+    if (minStock && (isNaN(minStock) || parseInt(minStock) < 0)) {
+      const error = new Error('Invalid minStock value');
+      
+      if (isNaN(minStock)) {
+        error.code = 'MINSTOCK_NOT_NUMBER';
+      } else if (parseInt(minStock) < 0) {
+        error.code = 'MINSTOCK_NEGATIVE';
+      } else {
+        error.code = 'INVALID_MINSTOCK';
+      }
+      
+      switch (error.code) {
+        case 'MINSTOCK_NOT_NUMBER':
+          setMinStockError('El stock mínimo debe ser un número');
+          break;
+        case 'MINSTOCK_NEGATIVE':
+          setMinStockError('El stock mínimo debe ser mayor o igual a 0');
+          break;
+        case 'INVALID_MINSTOCK':
+          setMinStockError('Stock mínimo inválido');
+          break;
+        default:
+          setMinStockError('Error en el stock mínimo');
+          break;
+      }
+      return;
+    }
+
+    // Validación: stock mínimo no puede ser mayor al stock actual
+    if (minStock && parseInt(minStock) > parseInt(stock)) {
+      setMinStockError('El stock mínimo no puede ser mayor al stock actual');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -155,6 +200,7 @@ export default function CrearProductoScreen({ navigation }) {
         name: name.trim(),
         price: parseFloat(price),
         stock: parseInt(stock),
+        minStock: minStock ? parseInt(minStock) : null,
         status,
         description: description.trim(),
         imageUri: imageUri || null, // Guardar URI local por ahora
@@ -171,6 +217,7 @@ export default function CrearProductoScreen({ navigation }) {
       setNameError('');
       setPriceError('');
       setStockError('');
+      setMinStockError('');
 
       // Éxito
       Toast.show({
@@ -186,6 +233,7 @@ export default function CrearProductoScreen({ navigation }) {
       setName('');
       setPrice('');
       setStock('');
+      setMinStock('');
       setDescription('');
       setImageUri(null);
       setStatus('Activo');
@@ -253,6 +301,16 @@ export default function CrearProductoScreen({ navigation }) {
         maxLength={10}
       />
       {stockError ? <Text style={styles.errorText}>{stockError}</Text> : null}
+
+      <TextInput
+        style={styles.input}
+        placeholder="Stock Mínimo"
+        keyboardType="numeric"
+        value={minStock}
+        onChangeText={handleMinStockChange}
+        maxLength={10}
+      />
+      {minStockError ? <Text style={styles.errorText}>{minStockError}</Text> : null}
 
       <View style={styles.pickerContainer}>
         <Picker

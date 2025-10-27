@@ -91,14 +91,14 @@
             value={minStock}
             onChangeText={setMinStock}
         />
-
+{/* 
         <TextInput
             style={styles.input}
             placeholder="Proveedor"
             keyboardType='text'
             value={provider}
             onChangeText={setProvider}
-        />
+        /> */}
 
         <View style={styles.pickerContainer}>
             <Picker
