@@ -27,7 +27,7 @@ export default function ProductScreen({ navigation, route }) {
   const [filterOption, setFilterOption] = useState('Todos');
   const [products, setProducts] = useState([]);
 
-  // Suscripción en tiempo real a Firestore -> colección 'products'
+  // ✅ Suscripción en tiempo real a Firestore
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(
@@ -43,7 +43,6 @@ export default function ProductScreen({ navigation, route }) {
             stock: data.stock ?? 0,
             status: data.status || '',
             description: data.description || '',
-            // soportar ambos campos: imageUri (desde Create) o image
             image: data.imageUri || data.image || null,
           });
         });
@@ -84,7 +83,6 @@ export default function ProductScreen({ navigation, route }) {
           onPress: async () => {
             try {
               LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              // Eliminar en Firestore
               await deleteDoc(doc(db, 'products', id));
             } catch (error) {
               console.error('Error eliminando producto:', error);
@@ -96,15 +94,17 @@ export default function ProductScreen({ navigation, route }) {
     );
   };
 
+  // ✅ Filtro + ordenamiento
   const filteredProducts = products
     .filter((item) => {
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesFilter =
         filterOption === 'Todos' ||
+        filterOption === 'A-Z' ||
+        filterOption === 'Z-A' ||
         (filterOption === 'Activo' && item.status === 'Activo') ||
         (filterOption === 'Inactivo' && item.status === 'Inactivo') ||
-        (filterOption === 'Stock bajo' && item.stock <= 5) ||
-        filterOption === 'Estado';
+        (filterOption === 'Stock bajo' && item.stock <= 5);
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => {
@@ -133,7 +133,6 @@ export default function ProductScreen({ navigation, route }) {
         <Picker.Item label="A-Z" value="A-Z" />
         <Picker.Item label="Z-A" value="Z-A" />
         <Picker.Item label="Stock bajo" value="Stock bajo" />
-        <Picker.Item label="Estado" value="Estado" />
         <Picker.Item label="Activo" value="Activo" />
         <Picker.Item label="Inactivo" value="Inactivo" />
       </Picker>
@@ -258,8 +257,8 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-  },
+    elevation: 5,},
+  
   emptyMessage: {
     textAlign: 'center',
     fontSize: 16,
