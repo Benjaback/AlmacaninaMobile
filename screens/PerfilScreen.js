@@ -16,7 +16,7 @@ import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
@@ -216,50 +216,69 @@ export default function PantallaPerfil({ navigation }) {
 
   // useEffect para obtener datos del usuario autenticado
   useEffect(() => {
+    let unsubscribeFirestore = null;
+    
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      // Limpiar listener anterior si existe
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore();
+        unsubscribeFirestore = null;
+      }
+      
       if (user) {
         try {
           // Obtener email del usuario
           setUserEmail(user.email || '');
           
-          // Intentar obtener datos adicionales desde Firestore
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          // Configurar listener en tiempo real para los datos del usuario en Firestore
+          const userDocRef = doc(db, 'users', user.uid);
           
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const fullName = userData.fullName || 
-                           (userData.firstName && userData.lastName ? 
-                            `${userData.firstName} ${userData.lastName}` : '') || 
-                           user.displayName || '';
-            
-            if (fullName && fullName.trim() !== '') {
-              setUserName(fullName);
-              setUserInitials(getInitials(fullName));
+          unsubscribeFirestore = onSnapshot(userDocRef, (userDoc) => {
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const fullName = userData.fullName || 
+                             (userData.firstName && userData.lastName ? 
+                              `${userData.firstName} ${userData.lastName}` : '') || 
+                             user.displayName || '';
+              
+              if (fullName && fullName.trim() !== '') {
+                setUserName(fullName);
+                setUserInitials(getInitials(fullName));
+              } else {
+                // Si no hay nombre completo, usar parte del email
+                const emailName = user.email.split('@')[0];
+                const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+                setUserName(formattedName);
+                setUserInitials(getInitials(formattedName));
+              }
             } else {
-              // Si no hay nombre completo, usar parte del email
-              const emailName = user.email.split('@')[0];
-              const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+              // Si no existe documento en Firestore, usar datos básicos
+              const displayName = user.displayName || user.email.split('@')[0];
+              const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
               setUserName(formattedName);
               setUserInitials(getInitials(formattedName));
             }
-          } else {
-            // Si no existe documento en Firestore, usar datos básicos
-            const displayName = user.displayName || user.email.split('@')[0];
-            const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+            
+            setLoading(false);
+          }, (error) => {
+            console.log('Error en listener de Firestore:', error);
+            // En caso de error, usar datos básicos del usuario
+            const fallbackName = user.displayName || user.email.split('@')[0];
+            const formattedName = fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1);
             setUserName(formattedName);
             setUserInitials(getInitials(formattedName));
-          }
+            setLoading(false);
+          });
           
         } catch (error) {
-          console.log('Error obteniendo datos del usuario:', error);
+          console.log('Error configurando listener:', error);
           // En caso de error, usar datos básicos del usuario
           const fallbackName = user.displayName || user.email.split('@')[0];
           const formattedName = fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1);
           setUserName(formattedName);
           setUserInitials(getInitials(formattedName));
+          setLoading(false);
         }
-        
-        setLoading(false);
       } else {
         // Usuario no autenticado
         setUserName('');
@@ -269,7 +288,13 @@ export default function PantallaPerfil({ navigation }) {
       }
     });
 
-    return unsubscribe; // Limpiar el listener al desmontar
+    // Función de limpieza
+    return () => {
+      unsubscribe(); // Limpiar listener de auth
+      if (unsubscribeFirestore) {
+        unsubscribeFirestore(); // Limpiar listener de Firestore
+      }
+    };
   }, []);
   // esto sirve para los iconos
   const MenuItem = ({ icon, title, subtitle, onPress, iconType = "FontAwesome" }) => {

@@ -12,11 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 
 // Componente separado para mostrar cada campo de datos
-const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", isEditable = false, isEditing, onChangeText, error, keyboardType = "default" }) => {
+const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", isEditable = false, isEditing, onChangeText, error, keyboardType = "default", maxLength }) => {
   const IconComponent = iconType === "MaterialIcons" ? MaterialIcons : FontAwesome;
   
   return (
@@ -37,6 +37,11 @@ const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", is
             autoCapitalize={keyboardType === "default" ? "words" : "none"}
             blurOnSubmit={false}
           />
+          {maxLength && (
+            <Text style={styles.characterCounter}>
+              {value ? value.length : 0}/{maxLength}
+            </Text>
+          )}
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       ) : (
@@ -83,6 +88,9 @@ export default function EditarPerfilScreen({ navigation }) {
     dni: '',
     phone: ''
   });
+
+  // Estado para debounce de validación DNI
+  const [dniValidationTimeout, setDniValidationTimeout] = useState(null);
 
   // Función para obtener datos del usuario
   const fetchUserData = async (user) => {
@@ -167,8 +175,37 @@ export default function EditarPerfilScreen({ navigation }) {
     }
   };
 
+  // Función para verificar unicidad del DNI
+  const checkDniUniqueness = async (dni) => {
+    try {
+      // No verificar si el DNI está vacío
+      if (!dni.trim()) return true;
+      
+      // Crear consulta para buscar usuarios con el mismo DNI
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('dni', '==', dni.trim()));
+      const querySnapshot = await getDocs(q);
+      
+      // Si encontramos documentos, verificar que no sea el usuario actual
+      if (!querySnapshot.empty) {
+        for (const doc of querySnapshot.docs) {
+          // Si el DNI pertenece a otro usuario (no al actual), es duplicado
+          if (doc.id !== currentUserId) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error verificando unicidad del DNI:', error);
+      // En caso de error, permitir continuar (no bloquear por error de red)
+      return true;
+    }
+  };
+
   // Función para validar los datos
-  const validateData = () => {
+  const validateData = async () => {
     const newErrors = {
       firstName: '',
       lastName: '',
@@ -190,6 +227,8 @@ export default function EditarPerfilScreen({ navigation }) {
     // Validar nombre (errores en campo como antes)
     if (editFirstName.trim().length < 2) {
       newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+    } else if (editFirstName.trim().length > 20) {
+      newErrors.firstName = 'El nombre no puede exceder 20 caracteres';
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(editFirstName.trim())) {
       newErrors.firstName = 'El nombre solo puede contener letras';
     }
@@ -197,13 +236,39 @@ export default function EditarPerfilScreen({ navigation }) {
     // Validar apellido (errores en campo como antes)
     if (editLastName.trim().length < 2) {
       newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+    } else if (editLastName.trim().length > 20) {
+      newErrors.lastName = 'El apellido no puede exceder 20 caracteres';
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(editLastName.trim())) {
       newErrors.lastName = 'El apellido solo puede contener letras';
     }
 
-    // Validar DNI (errores en campo como antes)
-    if (editDni.trim() && !/^\d{7,8}$/.test(editDni.trim())) {
-      newErrors.dni = 'DNI debe tener 7 u 8 dígitos';
+    // Validar DNI (solo verificar si ya hay un error mostrado en tiempo real)
+    if (editDni.trim() && !errors.dni) {
+      // Si no hay error en tiempo real pero hay DNI, hacer una validación final
+      const dniValue = editDni.trim();
+      
+      // Validar formato básico (7-8 dígitos)
+      if (!/^\d{7,8}$/.test(dniValue)) {
+        newErrors.dni = 'DNI inválido. Debe contener entre 7 y 8 números (ej: 12345678)';
+      }
+      // Validar que no sean todos números iguales
+      else if (/^(\d)\1+$/.test(dniValue)) {
+        newErrors.dni = 'DNI inválido. No puede contener todos los dígitos iguales';
+      }
+      // Validar que no sean números consecutivos simples
+      else if (/^(01234567|12345678|23456789|87654321|76543210|65432109|54321098|43210987|32109876|21098765|10987654)$/.test(dniValue)) {
+        newErrors.dni = 'DNI inválido. No puede ser una secuencia consecutiva';
+      }
+      // Validar unicidad del DNI
+      else {
+        const isUnique = await checkDniUniqueness(dniValue);
+        if (!isUnique) {
+          newErrors.dni = 'Este DNI ya está registrado por otro usuario';
+        }
+      }
+    } else if (errors.dni) {
+      // Si ya hay un error en tiempo real, conservarlo
+      newErrors.dni = errors.dni;
     }
 
     // Validar teléfono (errores en campo como antes)
@@ -217,73 +282,128 @@ export default function EditarPerfilScreen({ navigation }) {
 
   // Función para guardar los cambios
   const handleSaveChanges = async () => {
-    if (!validateData()) {
-      return;
-    }
+    // Mostrar alerta de confirmación antes de guardar
+    Alert.alert(
+      'Confirmar cambios',
+      '¿Estás seguro de que quieres guardar los cambios en tu perfil?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Guardar',
+          style: 'default',
+          onPress: async () => {
+            // Proceder con la validación y guardado
+            if (!(await validateData())) {
+              return;
+            }
 
-    if (!currentUserId) {
-      Alert.alert('Error', 'No se pudo identificar al usuario');
-      return;
-    }
+            if (!currentUserId) {
+              Alert.alert('Error', 'No se pudo identificar al usuario');
+              return;
+            }
 
-    try {
-      // Preparar datos actualizados
-      const updatedData = {
-        firstName: editFirstName.trim(),
-        lastName: editLastName.trim(),
-        dni: editDni.trim(),
-        phone: editPhone.trim(),
-        fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
-        updatedAt: new Date().toISOString()
-      };
+            try {
+              // Preparar datos actualizados
+              const updatedData = {
+                firstName: editFirstName.trim(),
+                lastName: editLastName.trim(),
+                dni: editDni.trim(),
+                phone: editPhone.trim(),
+                fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
+                updatedAt: new Date().toISOString()
+              };
 
-      // Actualizar en Firestore
-      await updateDoc(doc(db, 'users', currentUserId), updatedData);
+              // Actualizar en Firestore
+              await updateDoc(doc(db, 'users', currentUserId), updatedData);
 
-      // Actualizar estado local
-      setUserData(prev => ({
-        ...prev,
-        ...updatedData
-      }));
+              // Actualizar estado local
+              setUserData(prev => ({
+                ...prev,
+                ...updatedData
+              }));
 
-      // Salir del modo edición
-      setIsEditing(false);
+              // Salir del modo edición
+              setIsEditing(false);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Perfil actualizado',
-        text2: 'Los cambios se guardaron correctamente',
-        visibilityTime: 3000,
-      });
+              Toast.show({
+                type: 'success',
+                text1: 'Perfil actualizado',
+                text2: 'Los cambios se guardaron correctamente',
+                visibilityTime: 3000,
+              });
 
-    } catch (error) {
-      console.error('Error guardando datos:', error);
-      Alert.alert(
-        'Error',
-        'No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.',
-        [{ text: 'Entendido' }]
-      );
-    }
+            } catch (error) {
+              console.error('Error guardando datos:', error);
+              Alert.alert(
+                'Error',
+                'No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.',
+                [{ text: 'Entendido' }]
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Función para cancelar edición
   const handleCancelEdit = () => {
-    // Restaurar valores originales
-    setEditFirstName(userData.firstName);
-    setEditLastName(userData.lastName);
-    setEditDni(userData.dni);
-    setEditPhone(userData.phone);
-    
-    // Limpiar errores
-    setErrors({
-      firstName: '',
-      lastName: '',
-      dni: '',
-      phone: ''
-    });
-    
-    // Salir del modo edición
-    setIsEditing(false);
+    // Verificar si hay cambios sin guardar
+    if (hasChanges()) {
+      Alert.alert(
+        'Descartar cambios',
+        '¿Estás seguro de que quieres descartar los cambios realizados?',
+        [
+          {
+            text: 'Continuar editando',
+            style: 'cancel',
+          },
+          {
+            text: 'Descartar',
+            style: 'destructive',
+            onPress: () => {
+              // Restaurar valores originales
+              setEditFirstName(userData.firstName);
+              setEditLastName(userData.lastName);
+              setEditDni(userData.dni);
+              setEditPhone(userData.phone);
+              
+              // Limpiar errores
+              setErrors({
+                firstName: '',
+                lastName: '',
+                dni: '',
+                phone: ''
+              });
+              
+              // Salir del modo edición
+              setIsEditing(false);
+            },
+          },
+        ]
+      );
+    } else {
+      // Si no hay cambios, cancelar directamente
+      // Restaurar valores originales
+      setEditFirstName(userData.firstName);
+      setEditLastName(userData.lastName);
+      setEditDni(userData.dni);
+      setEditPhone(userData.phone);
+      
+      // Limpiar errores
+      setErrors({
+        firstName: '',
+        lastName: '',
+        dni: '',
+        phone: ''
+      });
+      
+      // Salir del modo edición
+      setIsEditing(false);
+    }
   };
 
   // Función para manejar la edición
@@ -291,22 +411,97 @@ export default function EditarPerfilScreen({ navigation }) {
     setIsEditing(true);
   }, []);
 
+  // Función para volver al perfil
+  const handleBackToProfile = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  // Función para verificar si hay cambios
+  const hasChanges = useCallback(() => {
+    return (
+      editFirstName.trim() !== userData.firstName ||
+      editLastName.trim() !== userData.lastName ||
+      editDni.trim() !== userData.dni ||
+      editPhone.trim() !== userData.phone
+    );
+  }, [editFirstName, editLastName, editDni, editPhone, userData]);
+
   // Optimizar las funciones de cambio de texto
   const handleFirstNameChange = useCallback((text) => {
     // Filtrar solo letras, espacios y acentos (bloquear números)
     const filteredText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-    setEditFirstName(filteredText);
+    // Limitar a máximo 20 caracteres
+    const limitedText = filteredText.slice(0, 20);
+    setEditFirstName(limitedText);
   }, []);
 
   const handleLastNameChange = useCallback((text) => {
     // Filtrar solo letras, espacios y acentos (bloquear números)
     const filteredText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-    setEditLastName(filteredText);
+    // Limitar a máximo 20 caracteres
+    const limitedText = filteredText.slice(0, 20);
+    setEditLastName(limitedText);
   }, []);
 
   const handleDniChange = useCallback((text) => {
-    setEditDni(text);
-  }, []);
+    // Filtrar solo números (bloquear letras y símbolos)
+    const filteredText = text.replace(/[^0-9]/g, '');
+    setEditDni(filteredText);
+    
+    // Limpiar timeout anterior
+    if (dniValidationTimeout) {
+      clearTimeout(dniValidationTimeout);
+    }
+    
+    // Validación inmediata de formato
+    let dniError = '';
+    
+    if (filteredText.trim()) {
+      const dniValue = filteredText.trim();
+      
+      // Validar formato básico (7-8 dígitos)
+      if (dniValue.length > 0 && dniValue.length < 7) {
+        dniError = 'DNI debe tener entre 7 y 8 dígitos';
+      } else if (dniValue.length > 8) {
+        dniError = 'DNI no puede tener más de 8 dígitos';
+      } else if (dniValue.length >= 7 && !/^\d{7,8}$/.test(dniValue)) {
+        dniError = 'DNI inválido. Debe contener entre 7 y 8 números (ej: 12345678)';
+      }
+      // Validar que no sean todos números iguales
+      else if (dniValue.length >= 7 && /^(\d)\1+$/.test(dniValue)) {
+        dniError = 'DNI inválido. No puede contener todos los dígitos iguales';
+      }
+      // Validar que no sean números consecutivos simples
+      else if (dniValue.length >= 7 && /^(01234567|12345678|23456789|87654321|76543210|65432109|54321098|43210987|32109876|21098765|10987654)$/.test(dniValue)) {
+        dniError = 'DNI inválido. No puede ser una secuencia consecutiva';
+      }
+    }
+    
+    // Actualizar error inmediatamente para validaciones de formato
+    setErrors(prev => ({
+      ...prev,
+      dni: dniError
+    }));
+    
+    // Validación de unicidad con debounce (solo si formato es válido)
+    if (!dniError && filteredText.length >= 7 && filteredText.length <= 8) {
+      const timeout = setTimeout(async () => {
+        try {
+          const isUnique = await checkDniUniqueness(filteredText);
+          if (!isUnique) {
+            setErrors(prev => ({
+              ...prev,
+              dni: 'Este DNI ya está registrado por otro usuario'
+            }));
+          }
+        } catch (error) {
+          console.log('Error verificando unicidad en tiempo real:', error);
+        }
+      }, 1000); // Esperar 1 segundo después de que el usuario deje de escribir
+      
+      setDniValidationTimeout(timeout);
+    }
+  }, [currentUserId, dniValidationTimeout]);
 
   const handlePhoneChange = useCallback((text) => {
     setEditPhone(text);
@@ -322,8 +517,15 @@ export default function EditarPerfilScreen({ navigation }) {
       }
     });
 
-    return unsubscribe;
-  }, []);
+    // Cleanup function
+    return () => {
+      unsubscribe();
+      // Limpiar timeout si existe
+      if (dniValidationTimeout) {
+        clearTimeout(dniValidationTimeout);
+      }
+    };
+  }, [dniValidationTimeout]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -353,6 +555,7 @@ export default function EditarPerfilScreen({ navigation }) {
             isEditing={isEditing}
             onChangeText={handleFirstNameChange}
             error={errors.firstName}
+            maxLength={20}
           />
           
           <DataField
@@ -363,6 +566,7 @@ export default function EditarPerfilScreen({ navigation }) {
             isEditing={isEditing}
             onChangeText={handleLastNameChange}
             error={errors.lastName}
+            maxLength={20}
           />
           
           <DataField
@@ -429,12 +633,13 @@ export default function EditarPerfilScreen({ navigation }) {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.saveButton}
+                style={[styles.saveButton, !hasChanges() && styles.saveButtonDisabled]}
                 onPress={handleSaveChanges}
-                activeOpacity={0.8}
+                activeOpacity={hasChanges() ? 0.8 : 1}
+                disabled={!hasChanges()}
               >
                 <FontAwesome name="check" size={18} color="#fff" />
-                <Text style={styles.saveButtonText}>Guardar</Text>
+                <Text style={[styles.saveButtonText, !hasChanges() && styles.saveButtonTextDisabled]}>Guardar</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -448,6 +653,20 @@ export default function EditarPerfilScreen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Botón para volver al perfil */}
+        {!isEditing && (
+          <View style={styles.backSection}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBackToProfile}
+              activeOpacity={0.8}
+            >
+              <FontAwesome name="arrow-left" size={18} color="#8F08AA" />
+              <Text style={styles.backButtonText}>Volver a Perfil</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Espaciado inferior */}
         <View style={{ height: 40 }} />
@@ -576,6 +795,13 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: '#B50000',
   },
+  characterCounter: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   errorText: {
     fontSize: 12,
     color: '#B50000',
@@ -674,10 +900,45 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     flex: 1,
   },
+  saveButtonDisabled: {
+    backgroundColor: '#cccccc',
+    elevation: 1,
+    shadowOpacity: 0.05,
+  },
   saveButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 8,
+  },
+  saveButtonTextDisabled: {
+    color: '#999999',
+  },
+  
+  // Back button section
+  backSection: {
+    marginHorizontal: 15,
+    marginTop: 15,
+  },
+  backButton: {
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#8F08AA',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8F08AA',
     marginLeft: 8,
   },
 });
