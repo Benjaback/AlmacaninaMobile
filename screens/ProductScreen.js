@@ -13,7 +13,7 @@ import {
   UIManager,
   Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../src/config/firebaseConfig';
 
@@ -28,6 +28,8 @@ export default function ProductScreen({ navigation, route }) {
   const [filterOption, setFilterOption] = useState('Todos');
   const [tempFilterOption, setTempFilterOption] = useState('Todos');
   const [products, setProducts] = useState([]);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   // ✅ Suscripción en tiempo real a Firestore
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function ProductScreen({ navigation, route }) {
             stock: data.stock ?? 0,
             status: data.status || '',
             description: data.description || '',
+            category: data.category || null,
             image: data.imageUri || data.image || null,
           });
         });
@@ -74,26 +77,29 @@ export default function ProductScreen({ navigation, route }) {
 
   const handleDelete = (id) => {
     const product = products.find((p) => p.id === id);
-    Alert.alert(
-      'Confirmar eliminación',
-      `¿Desea borrar el producto "${product ? product.name : id}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              await deleteDoc(doc(db, 'products', id));
-            } catch (error) {
-              console.error('Error eliminando producto:', error);
-              Alert.alert('Error', 'No se pudo eliminar el producto.');
-            }
-          },
-        },
-      ]
-    );
+    setProductToDelete({ id, product });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      await deleteDoc(doc(db, 'products', productToDelete.id));
+      setDeleteModalVisible(false);
+      setProductToDelete(null);
+    } catch (error) {
+      console.error('Error eliminando producto:', error);
+      Alert.alert('Error', 'No se pudo eliminar el producto.');
+      setDeleteModalVisible(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalVisible(false);
+    setProductToDelete(null);
   };
 
   // ✅ Filtro + ordenamiento
@@ -301,7 +307,7 @@ export default function ProductScreen({ navigation, route }) {
                 ]}
                 onPress={() => setTempFilterOption('Canes')}
               >
-                <Ionicons name="paw" size={20} color={tempFilterOption === 'Canes' ? '#9C27B0' : '#333'} />
+                <FontAwesome5 name="dog" size={20} color={tempFilterOption === 'Canes' ? '#9C27B0' : '#333'} />
                 <Text style={[
                   styles.filterCategoryText,
                   tempFilterOption === 'Canes' && styles.filterOptionButtonTextSelected
@@ -317,7 +323,7 @@ export default function ProductScreen({ navigation, route }) {
                 ]}
                 onPress={() => setTempFilterOption('Peces')}
               >
-                <Ionicons name="fish" size={20} color={tempFilterOption === 'Peces' ? '#9C27B0' : '#333'} />
+                <FontAwesome5 name="fish" size={20} color={tempFilterOption === 'Peces' ? '#9C27B0' : '#333'} />
                 <Text style={[
                   styles.filterCategoryText,
                   tempFilterOption === 'Peces' && styles.filterOptionButtonTextSelected
@@ -335,7 +341,7 @@ export default function ProductScreen({ navigation, route }) {
               ]}
               onPress={() => setTempFilterOption('Felinos')}
             >
-              <Ionicons name="paw" size={20} color={tempFilterOption === 'Felinos' ? '#9C27B0' : '#333'} />
+              <FontAwesome5 name="cat" size={20} color={tempFilterOption === 'Felinos' ? '#9C27B0' : '#333'} />
               <Text style={[
                 styles.filterCategoryText,
                 tempFilterOption === 'Felinos' && styles.filterOptionButtonTextSelected
@@ -381,6 +387,59 @@ export default function ProductScreen({ navigation, route }) {
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            {/* Product Image */}
+            {productToDelete?.product?.image ? (
+              <Image 
+                source={{ uri: productToDelete.product.image }} 
+                style={styles.deleteProductImage} 
+              />
+            ) : (
+              <View style={styles.deletePlaceholderImage}>
+                <Ionicons name="image-outline" size={60} color="#ccc" />
+              </View>
+            )}
+            
+            {/* Product Name */}
+            {productToDelete?.product?.name && (
+              <Text style={styles.deleteProductName}>
+                {productToDelete.product.name}
+              </Text>
+            )}
+            
+            {/* Message */}
+            <Text style={styles.deleteModalText}>
+              ¿Deseas eliminar este producto?
+            </Text>
+            
+            {/* Buttons */}
+            <View style={styles.deleteButtonsRow}>
+              <TouchableOpacity 
+                style={styles.acceptButton}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.acceptButtonText}>ACEPTAR</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelDeleteButton}
+                onPress={cancelDelete}
+              >
+                <Text style={styles.cancelDeleteButtonText}>CANCELAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -694,5 +753,83 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     marginLeft: 6,
+  },
+  // Delete Modal Styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#4A90E2',
+    padding: 30,
+    width: '80%',
+    maxWidth: 350,
+    alignItems: 'center',
+  },
+  deleteProductImage: {
+    width: 120,
+    height: 140,
+    borderRadius: 10,
+    marginBottom: 20,
+    resizeMode: 'cover',
+  },
+  deletePlaceholderImage: {
+    width: 120,
+    height: 140,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  deleteProductName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  deleteModalText: {
+    fontSize: 16,
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 25,
+    fontWeight: '400',
+  },
+  deleteButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  acceptButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    width: '48%',
+    alignItems: 'center',
+  },
+  acceptButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  cancelDeleteButton: {
+    backgroundColor: '#F44336',
+    paddingVertical: 14,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    width: '48%',
+    alignItems: 'center',
+  },
+  cancelDeleteButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
