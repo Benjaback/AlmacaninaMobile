@@ -26,6 +26,8 @@ export default function CrearProductoScreen({ navigation }) {
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState('');
+  const [formValid, setFormValid] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   
   // Estado para modal de éxito
   const [successModalVisible, setSuccessModalVisible] = useState(false);
@@ -37,10 +39,43 @@ export default function CrearProductoScreen({ navigation }) {
   const [minStockError, setMinStockError] = useState('');
 
   // Función para validar y filtrar el nombre en tiempo real
+  const checkFormValidity = (updatedValues = {}) => {
+    const currentValues = {
+      name: updatedValues.name !== undefined ? updatedValues.name : name,
+      price: updatedValues.price !== undefined ? updatedValues.price : price,
+      stock: updatedValues.stock !== undefined ? updatedValues.stock : stock,
+      minStock: updatedValues.minStock !== undefined ? updatedValues.minStock : minStock,
+      category: updatedValues.category !== undefined ? updatedValues.category : category,
+      status: updatedValues.status !== undefined ? updatedValues.status : status,
+    };
+
+    const isValid = 
+      currentValues.name.trim() !== '' &&
+      currentValues.price?.toString().trim() !== '' &&
+      currentValues.stock?.toString().trim() !== '' &&
+      currentValues.minStock?.toString().trim() !== '' &&
+      currentValues.category !== '' &&
+      currentValues.status !== '';
+
+    // Verificar si hay cambios
+    const hasChanges = 
+      currentValues.name.trim() !== '' ||
+      currentValues.price?.toString().trim() !== '' ||
+      currentValues.stock?.toString().trim() !== '' ||
+      currentValues.minStock?.toString().trim() !== '' ||
+      currentValues.category !== '' ||
+      currentValues.status !== 'Activo' ||
+      currentValues.description !== '';
+
+    setFormValid(isValid);
+    setHasChanges(hasChanges);
+  };
+
   const handleNameChange = (text) => {
     // Permitir solo letras, espacios y acentos
     const filteredText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     setName(filteredText);
+    checkFormValidity({ name: filteredText });
   };
 
   // Función para validar y filtrar el stock en tiempo real
@@ -48,6 +83,7 @@ export default function CrearProductoScreen({ navigation }) {
     // Permitir solo números enteros (sin puntos ni comas)
     const filteredText = text.replace(/[^0-9]/g, '');
     setStock(filteredText);
+    checkFormValidity({ stock: filteredText });
   };
 
   // Función para validar y filtrar el stock mínimo en tiempo real
@@ -55,6 +91,7 @@ export default function CrearProductoScreen({ navigation }) {
     // Permitir solo números enteros (sin puntos ni comas)
     const filteredText = text.replace(/[^0-9]/g, '');
     setMinStock(filteredText);
+    checkFormValidity({ minStock: filteredText });
   };
 
   const handleSelectImage = async () => {
@@ -242,7 +279,7 @@ export default function CrearProductoScreen({ navigation }) {
       setTimeout(() => {
         setSuccessModalVisible(false);
         navigation.goBack();
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
       console.error('Error guardando producto:', error);
@@ -278,7 +315,10 @@ export default function CrearProductoScreen({ navigation }) {
           <View style={styles.categoryContainer}>
             <TouchableOpacity
               style={[styles.categoryButton, category === 'Canes' && styles.categoryButtonActive]}
-              onPress={() => setCategory('Canes')}
+              onPress={() => {
+                setCategory('Canes');
+                checkFormValidity({ category: 'Canes' });
+              }}
             >
               <FontAwesome5 name="dog" size={24} color={category === 'Canes' ? '#fff' : '#9C27B0'} />
             </TouchableOpacity>
@@ -299,31 +339,41 @@ export default function CrearProductoScreen({ navigation }) {
           </View>
 
           {/* Nombre del Producto */}
-          <Text style={styles.label}>Nombre del Producto</Text>
+          <Text style={styles.label}>Nombre del Producto <Text style={styles.asterisk}>*</Text></Text>
           <TextInput
             style={styles.input}
             placeholder="Ej: Pedigree"
             value={name}
             onChangeText={handleNameChange}
-            maxLength={50}
+            maxLength={30}
           />
           {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
           {/* Precio */}
-          <Text style={styles.label}>Precio</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="$ 0"
-            keyboardType="numeric"
-            value={price}
-            onChangeText={setPrice}
-          />
-          {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
+           <Text style={styles.label}>Precio <Text style={styles.asterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="$ 0"
+                  keyboardType="numeric"
+                  value={price}
+                  onChangeText={(text) => {
+                      const numericValue = parseFloat(text);
+                      if (numericValue < 0) {
+                        setPriceError('El precio no puede ser negativo');
+                      } else {
+                        setPriceError('');
+                        setPrice(text);
+                        checkFormValidity({ price: text });
+                      }
+                    }}
+                      maxLength={10}
+              />
+            {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
 
           {/* Stock y Stock Mínimo */}
           <View style={styles.row}>
             <View style={styles.halfInput}>
-              <Text style={styles.label}>Stock</Text>
+              <Text style={styles.label}>Stock <Text style={styles.asterisk}>*</Text></Text>
               <TextInput
                 style={styles.input}
                 placeholder="0"
@@ -336,7 +386,7 @@ export default function CrearProductoScreen({ navigation }) {
             </View>
 
             <View style={styles.halfInput}>
-              <Text style={styles.label}>Stock Mínimo</Text>
+              <Text style={styles.label}>Stock Mínimo <Text style={styles.asterisk}>*</Text></Text>
               <TextInput
                 style={styles.input}
                 placeholder="0"
@@ -350,11 +400,14 @@ export default function CrearProductoScreen({ navigation }) {
           </View>
 
           {/* Estado */}
-          <Text style={styles.label}>Estado</Text>
+          <Text style={styles.label}>Estado <Text style={styles.asterisk}>*</Text></Text>
           <View style={styles.statusContainer}>
             <TouchableOpacity
               style={[styles.statusButton, status === 'Activo' && styles.statusButtonActive]}
-              onPress={() => setStatus('Activo')}
+              onPress={() => {
+                setStatus('Activo');
+                checkFormValidity({ status: 'Activo' });
+              }}
             >
               <Text style={[styles.statusButtonText, status === 'Activo' && styles.statusButtonTextActive]}>
                 Activo
@@ -400,9 +453,9 @@ export default function CrearProductoScreen({ navigation }) {
           {/* Botones de Acción */}
           <View style={styles.buttonRow}>
             <TouchableOpacity 
-              style={[styles.createButton, loading && styles.createButtonDisabled]} 
+              style={[styles.createButton, (loading || !formValid || !hasChanges) && styles.createButtonDisabled]} 
               onPress={handleSave}
-              disabled={loading}
+              disabled={loading || !formValid || !hasChanges}
             >
               <Text style={styles.createButtonText}>
                 {loading ? 'CREANDO...' : 'CREAR'}
@@ -424,29 +477,44 @@ export default function CrearProductoScreen({ navigation }) {
       >
         <View style={styles.successModalOverlay}>
           <View style={styles.successModalContent}>
-            {/* Success Icon */}
-            <View style={styles.successIconContainer}>
-              <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
+            {/* Animal Icon Animation */}
+            <View style={[styles.successIconContainer, styles.animalIconContainer]}>
+              {category === 'Canes' && (
+                <FontAwesome5 
+                  name="dog" 
+                  size={60} 
+                  color="#9C27B0"
+                  style={styles.animalIcon} 
+                />
+              )}
+              {category === 'Felinos' && (
+                <FontAwesome5 
+                  name="cat" 
+                  size={60} 
+                  color="#9C27B0"
+                  style={styles.animalIcon} 
+                />
+              )}
+              {category === 'Peces' && (
+                <FontAwesome5 
+                  name="fish" 
+                  size={60} 
+                  color="#9C27B0"
+                  style={styles.animalIcon} 
+                />
+              )}
+              <View style={styles.checkmarkOverlay}>
+                <Ionicons name="checkmark-circle" size={30} color="#4CAF50" />
+              </View>
             </View>
             
             {/* Title */}
-            <Text style={styles.successModalTitle}>Producto Creado</Text>
+            <Text style={styles.successModalTitle}>¡Producto Creado!</Text>
             
             {/* Message */}
             <Text style={styles.successModalText}>
-              El producto se creo Exitosamente
+              El producto se guardó correctamente en el inventario
             </Text>
-            
-            {/* Button */}
-            <TouchableOpacity 
-              style={styles.successButton}
-              onPress={() => {
-                setSuccessModalVisible(false);
-                navigation.goBack();
-              }}
-            >
-              <Text style={styles.successButtonText}>ACEPTAR</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -640,6 +708,32 @@ const styles = StyleSheet.create({
   },
   successIconContainer: {
     marginBottom: 15,
+    position: 'relative',
+  },
+  animalIconContainer: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  animalIcon: {
+    transform: [{ scale: 1.2 }],
+    textShadowColor: 'rgba(156, 39, 176, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  checkmarkOverlay: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 2,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   successModalTitle: {
     fontSize: 20,
@@ -666,6 +760,11 @@ const styles = StyleSheet.create({
   successButtonText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  asterisk: {
+    color: '#FF0000',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

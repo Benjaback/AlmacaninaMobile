@@ -428,14 +428,14 @@ export default function ProductScreen({ navigation, route }) {
                 style={styles.acceptButton}
                 onPress={confirmDelete}
               >
-                <Text style={styles.acceptButtonText}>ACEPTAR</Text>
+                <Text style={styles.acceptButtonText}>Aceptar</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.cancelDeleteButton}
                 onPress={cancelDelete}
               >
-                <Text style={styles.cancelDeleteButtonText}>CANCELAR</Text>
+                <Text style={styles.cancelDeleteButtonText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
           </View>
