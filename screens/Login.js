@@ -123,7 +123,20 @@ const handleLogin = async () => {
             style={styles.input}
             placeholder="Ingrese su correo"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+            }}
+            onEndEditing={() => {
+              const emailRegex = /^[^\s@]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+              if (!email.trim()) {
+                // Optional: set error for empty, but since login checks for empty later, maybe not
+              } else if (!emailRegex.test(email)) {
+                setEmailError('El formato del correo electrónico no es válido.');
+              } else {
+                setEmailError('');
+              }
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -239,10 +252,10 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     top: 25,
-    color: '#007AFF',
+    color: '#000000ff',
   },
   signUp: { /* texto registrarse del singUpText */
-    color: '#007AFF',
+    color: '#8F08AA',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -266,5 +279,7 @@ const styles = StyleSheet.create({
     marginTop: -15,
     marginBottom: 10,
     alignSelf: 'flex-start',
+    width: '100%',
   },
+
 });

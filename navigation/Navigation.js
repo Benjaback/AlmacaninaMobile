@@ -12,6 +12,10 @@ import PantallaPerfil from '../screens/PerfilScreen';
 import EditarPerfilScreen from '../screens/EditarPerfilScreen';
 import PantallaProveedores from '../screens/ProveedorScreen';
 import PantallaEmpleados from '../screens/EmpleadosScreen';
+import CreateProductScreen from '../screens/CreateProductScreen';
+import EditarProductoScreen from '../screens/EditarProductScreen';
+import ProductScreen from '../screens/ProductScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -37,11 +41,14 @@ function Navegacion() {
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
         <Stack.Screen name="Cambiar" component={Cambiar} options={{ headerShown: false }} />
         <Stack.Screen name="Inicio" component={HomeWithTabs} options={{ headerShown: false }} />
-        <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
+        <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ headerShown: false }} />
         <Stack.Screen name="Perfil" component={PantallaPerfil} options={{ title: 'Perfil' }} />
         <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Proveedores" component={PantallaProveedores} options={{ title: 'Proveedores' }} />
         <Stack.Screen name="Empleados" component={PantallaEmpleados} options={{ title: 'Empleados' }} />
+        <Stack.Screen name="CrearProducto" component={CreateProductScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="EditarProducto"  component={EditarProductoScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ProductScreen" component={ProductScreen} options={{ title: 'Producto'}} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -150,19 +150,24 @@ export default function SignUp({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="Ingrese su nombre"
-          value={firstName}
-          onChangeText={(text) => {
-            const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
-            setFirstName(cleanedText);
-            if (!cleanedText.trim()) {
-              // setFirstNameError('Este campo es obligatorio.');
-              // setFirstNameSuccess('');
-            } else {
-              setFirstNameError('');
-              [/*setFirstNameSuccess('Campo válido');*/]
-            }
-          }}
-        />
+            value={firstName}
+            maxLength={30}
+            onChangeText={(text) => {
+              const cleanedText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+              setFirstName(cleanedText);
+              if (!cleanedText.trim()) {
+                // setFirstNameError('Este campo es obligatorio.');
+                // setFirstNameSuccess('');
+              } else if (cleanedText.length < 3) {
+                setFirstNameError('El nombre debe tener al menos 3 letras.');
+              } else if (cleanedText.length > 30) {
+                setFirstNameError('El nombre no puede tener más de 30 letras.');
+              } else {
+                setFirstNameError('');
+                [/*setFirstNameSuccess('Campo válido');*/]
+              }
+            }}
+          />
       </View>
       {firstNameError ? <Text style={styles.errorText}>{firstNameError}</Text> : null}
       {firstNameSuccess ? <Text style={styles.successText}>{firstNameSuccess}</Text> : null}
@@ -174,12 +179,17 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su apellido"
             value={lastName}
+            maxLength={30}
             onChangeText={(text) => {
-              const cleanedText = text.replace(/[^a-zA-Z\s]/g, '');
+              const cleanedText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
               setLastName(cleanedText);
               if (!cleanedText.trim()) {
                 // setLastNameError('Este campo es obligatorio.');
                 // setLastNameSuccess('');
+              } else if (cleanedText.length < 3) {
+                setLastNameError('El apellido debe tener al menos 3 letras.');
+              } else if (cleanedText.length > 30) {
+                setLastNameError('El apellido no puede tener más de 30 letras.');
               } else {
                 setLastNameError('');
                 [/*setLastNameSuccess('Campo válido');*/]
@@ -229,15 +239,16 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Ingrese su contraseña"
             value={password}
+            maxLength={50}
             onFocus={() => setShowPasswordRequirements(true)}
             onChangeText={(text) => {
               setPassword(text);
               validatePassword(text);
-              
+
               // Re-evaluar confirmPassword si ya hay algo escrito
               if (confirmPassword) {
                 const allRequirementsMet = text.length >= 6 && /[A-Z]/.test(text) && /[a-z]/.test(text) && /\d/.test(text);
-                
+
                 if (confirmPassword === text && allRequirementsMet) {
                   setConfirmPasswordError('');
                   setConfirmPasswordSuccess('Las contraseñas coinciden.');
@@ -249,7 +260,7 @@ export default function SignUp({ navigation }) {
                   setConfirmPasswordSuccess('');
                 }
               }
-              
+
               const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,}$/;
               if (!text.trim()) {
                 // setPasswordError('Este campo es obligatorio.');
@@ -330,11 +341,12 @@ export default function SignUp({ navigation }) {
             style={styles.input}
             placeholder="Confirme su contraseña"
             value={confirmPassword}
+            maxLength={50}
             onChangeText={(text) => {
               setConfirmPassword(text);
               // Verificar si todos los requisitos de contraseña están cumplidos
               const allRequirementsMet = passwordLength && hasUppercase && hasLowercase && hasNumber;
-              
+
               if (!text.trim()) {
                 // setConfirmPasswordError('Este campo es obligatorio.');
                 // setConfirmPasswordSuccess('');
