@@ -123,44 +123,53 @@ function Home({ navigation, tabNavigation }) {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
-
         const userName = user.displayName || user.email.split('@')[0];
         setUserName(userName);
+        
+        // Solo hacer la consulta de productos si el usuario está autenticado
+        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+        const unsubscribeProducts = onSnapshot(
+            q,
+            (querySnapshot) => {
+                const lowStockItems = [];
+                querySnapshot.forEach((d) => {
+                    const data = d.data();
+                    
+                    // ✅ Lógica: Si 'stock' es menor o igual a un 'stockMinimo' definido (fijo en 5 o tomado de minStock)
+                    const currentStock = data.stock ?? 0;
+                    const minThreshold = data.minStock ? parseInt(data.minStock) : 5; // Usamos 5 si no está definido
+
+                    if (currentStock <= minThreshold) {
+                        lowStockItems.push({
+                            id: d.id,
+                            name: data.name || 'Producto Desconocido',
+                            stock: currentStock,
+                            minStock: minThreshold,
+                        });
+                    }
+                });
+                setLowStockProducts(lowStockItems);
+            },
+            (error) => {
+                console.error('Error fetching low stock products:', error);
+                // Limpiar productos si hay error
+                setLowStockProducts([]);
+            }
+        );
+        
+        // Retornar función de limpieza para productos
+        return unsubscribeProducts;
+      } else {
+        // Si no hay usuario, limpiar datos
+        setUserName('');
+        setLowStockProducts([]);
       }
     });
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-    const unsubscribeProducts = onSnapshot(
-        q,
-        (querySnapshot) => {
-            const lowStockItems = [];
-            querySnapshot.forEach((d) => {
-                const data = d.data();
-                
-                // ✅ Lógica: Si 'stock' es menor o igual a un 'stockMinimo' definido (fijo en 5 o tomado de minStock)
-                const currentStock = data.stock ?? 0;
-                const minThreshold = data.minStock ? parseInt(data.minStock) : 5; // Usamos 5 si no está definido
 
-                if (currentStock <= minThreshold) {
-                    lowStockItems.push({
-                        id: d.id,
-                        name: data.name || 'Producto Desconocido',
-                        stock: currentStock,
-                        minStock: minThreshold,
-                    });
-                }
-            });
-            setLowStockProducts(lowStockItems);
-        },
-        (error) => {
-            console.error('Error fetching low stock products:', error);
-            // Puedes mostrar un Toast aquí si es necesario
-        }
-    );
-
+    // Función de limpieza principal
     return () => {
-        unsubscribeAuth();
-        unsubscribeProducts();
-    }
+      unsubscribeAuth();
+    };
   }, []);
 
   /* Función para manejar el cierre de sesión con confirmación */
