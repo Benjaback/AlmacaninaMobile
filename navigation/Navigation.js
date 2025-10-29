@@ -41,7 +41,7 @@ function Navegacion() {
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
         <Stack.Screen name="Cambiar" component={Cambiar} options={{ headerShown: false }} />
         <Stack.Screen name="Inicio" component={HomeWithTabs} options={{ headerShown: false }} />
-        <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ title: 'Gestionar Productos' }} />
+        <Stack.Screen name="GestionarProductos" component={PantallaProductos} options={{ headerShown: false }} />
         <Stack.Screen name="Perfil" component={PantallaPerfil} options={{ title: 'Perfil' }} />
         <Stack.Screen name="EditarPerfil" component={EditarPerfilScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Proveedores" component={PantallaProveedores} options={{ title: 'Proveedores' }} />
