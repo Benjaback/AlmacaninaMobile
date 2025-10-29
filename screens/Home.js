@@ -121,10 +121,57 @@ function Home({ navigation, tabNavigation }) {
   const [isLogOutAlertVisible, setIsLogOutAlertVisible] = useState(false);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userName = user.displayName || user.email.split('@')[0];
-        setUserName(userName);
+        // Obtener nombre desde Firestore
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            // Obtener solo el primer nombre
+            let firstName = '';
+            
+            // Prioridad 1: firstName directo
+            if (userData.firstName) {
+              firstName = userData.firstName;
+            }
+            // Prioridad 2: extraer primer nombre de fullName
+            else if (userData.fullName) {
+              firstName = userData.fullName.split(' ')[0];
+            }
+            // Prioridad 3: extraer primer nombre de displayName
+            else if (user.displayName) {
+              firstName = user.displayName.split(' ')[0];
+            }
+            
+            if (firstName && firstName.trim() !== '') {
+              setUserName(firstName);
+            } else {
+              // Si no hay nombre, usar parte del email
+              const emailName = user.email.split('@')[0];
+              const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+              setUserName(formattedName);
+            }
+          } else {
+            // Si no existe documento en Firestore, usar datos básicos
+            const displayName = user.displayName || user.email.split('@')[0];
+            // Extraer solo el primer nombre
+            const firstName = displayName.split(' ')[0];
+            const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+            setUserName(formattedName);
+          }
+        } catch (error) {
+          console.log('Error obteniendo datos del usuario:', error);
+          // En caso de error, usar fallback
+          const fallbackName = user.displayName || user.email.split('@')[0];
+          // Extraer solo el primer nombre
+          const firstName = fallbackName.split(' ')[0];
+          const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+          setUserName(formattedName);
+        }
         
         // Solo hacer la consulta de productos si el usuario está autenticado
         const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
