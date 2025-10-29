@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, FlatList, Dimensions, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, FlatList, Dimensions, Modal, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -121,10 +121,57 @@ function Home({ navigation, tabNavigation }) {
   const [isLogOutAlertVisible, setIsLogOutAlertVisible] = useState(false);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userName = user.displayName || user.email.split('@')[0];
-        setUserName(userName);
+        // Obtener nombre desde Firestore
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            // Obtener solo el primer nombre
+            let firstName = '';
+            
+            // Prioridad 1: firstName directo
+            if (userData.firstName) {
+              firstName = userData.firstName;
+            }
+            // Prioridad 2: extraer primer nombre de fullName
+            else if (userData.fullName) {
+              firstName = userData.fullName.split(' ')[0];
+            }
+            // Prioridad 3: extraer primer nombre de displayName
+            else if (user.displayName) {
+              firstName = user.displayName.split(' ')[0];
+            }
+            
+            if (firstName && firstName.trim() !== '') {
+              setUserName(firstName);
+            } else {
+              // Si no hay nombre, usar parte del email
+              const emailName = user.email.split('@')[0];
+              const formattedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+              setUserName(formattedName);
+            }
+          } else {
+            // Si no existe documento en Firestore, usar datos básicos
+            const displayName = user.displayName || user.email.split('@')[0];
+            // Extraer solo el primer nombre
+            const firstName = displayName.split(' ')[0];
+            const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+            setUserName(formattedName);
+          }
+        } catch (error) {
+          console.log('Error obteniendo datos del usuario:', error);
+          // En caso de error, usar fallback
+          const fallbackName = user.displayName || user.email.split('@')[0];
+          // Extraer solo el primer nombre
+          const firstName = fallbackName.split(' ')[0];
+          const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+          setUserName(formattedName);
+        }
         
         // Solo hacer la consulta de productos si el usuario está autenticado
         const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
@@ -234,87 +281,94 @@ function Home({ navigation, tabNavigation }) {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.content}>
-            <View style={styles.welcomeCard}>
-              <FontAwesome6 name="paw" size={40} color={COLORS.primaryPurple} style={styles.pawIcon} />
-              <View style={styles.welcomeTextContainer}>
-                <Text style={styles.welcomeTitle}>¡Bienvenido de vuelta!</Text>
-                <Text style={styles.userName}>{userName}</Text>
-                <Text style={styles.questionText}>¿Qué deseas administrar hoy?</Text>
+          <ScrollView 
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={true}
+          >
+            <View style={styles.content}>
+              <View style={styles.welcomeCard}>
+                <FontAwesome6 name="paw" size={40} color={COLORS.primaryPurple} style={styles.pawIcon} />
+                <View style={styles.welcomeTextContainer}>
+                  <Text style={styles.welcomeTitle}>¡Bienvenido de vuelta!</Text>
+                  <Text style={styles.userName}>{userName}</Text>
+                  <Text style={styles.questionText}>¿Qué deseas administrar hoy?</Text>
+                </View>
+              </View>
+
+              <View style={styles.menuGrid}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    const parentNav = navigation.getParent ? navigation.getParent() : navigation;
+                    parentNav.navigate('GestionarProductos');
+                  }}>
+                  <BotonNavegacion icon="inbox" texto="Productos" destino="GestionarProductos" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    const parentNav = navigation.getParent ? navigation.getParent() : navigation;
+                    parentNav.navigate('Empleados');
+                  }}>
+                  <BotonNavegacion icon="team" texto="Empleados" destino="Empleados" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    const parentNav = navigation.getParent ? navigation.getParent() : navigation;
+                    parentNav.navigate('Proveedores');
+                  }}>
+                  <BotonNavegacion icon="car" texto="Proveedores" destino="Proveedores" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.carouselContainer}>
+                  <Text style={styles.sectionTitle}>Servicios Destacados 🐾</Text>
+                  <FlatList
+                      data={DUMMY_SERVICES}
+                      keyExtractor={(item) => item.id}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToAlignment="start"
+                      decelerationRate="fast"
+                      contentContainerStyle={{ paddingHorizontal: 5 }}
+                      renderItem={({ item }) => <ServiceCard service={item} />}
+                  />
+              </View>
+
+              <View style={styles.carouselContainer}>
+                  <Text style={styles.sectionTitle}>⚠️ Stock Bajo ({lowStockProducts.length})</Text>
+                  
+                  {lowStockProducts.length > 0 ? (
+                      <FlatList
+                          data={lowStockProducts}
+                          keyExtractor={(item) => item.id}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          snapToAlignment="start"
+                          decelerationRate="fast"
+                          contentContainerStyle={{ paddingHorizontal: 5 }}
+                          renderItem={({ item }) => (
+                              <LowStockCard 
+                                  product={item} 
+                                  // ✅ CORRECCIÓN: Conecta la tarjeta con la función Alert.alert
+                                  onPress={() => handleShowStockAlert(item.name)} 
+                              />
+                          )}
+                      />
+                  ) : (
+                      <View style={styles.safeStockMessage}>
+                          <Ionicons name="checkmark-circle-outline" size={24} color={COLORS.safeStockGreen} />
+                          <Text style={styles.safeStockText}>¡Todo el stock está en niveles seguros!</Text>
+                      </View>
+                  )}
               </View>
             </View>
-
-            <View style={styles.menuGrid}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  const parentNav = navigation.getParent ? navigation.getParent() : navigation;
-                  parentNav.navigate('GestionarProductos');
-                }}>
-                <BotonNavegacion icon="inbox" texto="Productos" destino="GestionarProductos" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  const parentNav = navigation.getParent ? navigation.getParent() : navigation;
-                  parentNav.navigate('Empleados');
-                }}>
-                <BotonNavegacion icon="team" texto="Empleados" destino="Empleados" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  const parentNav = navigation.getParent ? navigation.getParent() : navigation;
-                  parentNav.navigate('Proveedores');
-                }}>
-                <BotonNavegacion icon="car" texto="Proveedores" destino="Proveedores" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.carouselContainer}>
-                <Text style={styles.sectionTitle}>Servicios Destacados 🐾</Text>
-                <FlatList
-                    data={DUMMY_SERVICES}
-                    keyExtractor={(item) => item.id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    snapToAlignment="start"
-                    decelerationRate="fast"
-                    contentContainerStyle={{ paddingHorizontal: 5 }}
-                    renderItem={({ item }) => <ServiceCard service={item} />}
-                />
-            </View>
-
-            <View style={styles.carouselContainer}>
-                <Text style={styles.sectionTitle}>⚠️ Stock Bajo ({lowStockProducts.length})</Text>
-                
-                {lowStockProducts.length > 0 ? (
-                    <FlatList
-                        data={lowStockProducts}
-                        keyExtractor={(item) => item.id}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        snapToAlignment="start"
-                        decelerationRate="fast"
-                        contentContainerStyle={{ paddingHorizontal: 5 }}
-                        renderItem={({ item }) => (
-                            <LowStockCard 
-                                product={item} 
-                                // ✅ CORRECCIÓN: Conecta la tarjeta con la función Alert.alert
-                                onPress={() => handleShowStockAlert(item.name)} 
-                            />
-                        )}
-                    />
-                ) : (
-                    <View style={styles.safeStockMessage}>
-                        <Ionicons name="checkmark-circle-outline" size={24} color={COLORS.safeStockGreen} />
-                        <Text style={styles.safeStockText}>¡Todo el stock está en niveles seguros!</Text>
-                    </View>
-                )}
-            </View>
-          </View>
+          </ScrollView>
         </View>
         <CustomConfirmAlert
             isVisible={isLogOutAlertVisible}
@@ -463,6 +517,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundLight,
+  },
+  // --- SCROLL CONTAINER ---
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20, // Espacio adicional al final para mejor scroll
   },
   // --- HEADER ---
   header: {

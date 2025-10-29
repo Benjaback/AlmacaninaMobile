@@ -9,6 +9,8 @@
     Image,
     Alert,
     Modal,
+    KeyboardAvoidingView,
+    Platform,
     } from 'react-native';
     import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
     import * as ImagePicker from 'expo-image-picker';
@@ -259,7 +261,18 @@
 
     return (
         <>
-        <ScrollView contentContainerStyle={styles.container}>
+        <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+            <ScrollView 
+                contentContainerStyle={styles.scrollContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                bounces={true}
+                style={{ flex: 1 }}
+            >
             {/* Header */}
             <View style={styles.header}>
             <TouchableOpacity onPress={handleCancel}>
@@ -379,6 +392,7 @@
                     onPress={() => {
                     setCategory('Felinos');
                     setShowCategoryDropdown(false);
+                    checkFormValidityAndChanges({ category: 'Felinos' });
                     }}
                 >
                     <FontAwesome5 name="cat" size={18} color={category === 'Felinos' ? '#9C27B0' : '#666'} />
@@ -391,6 +405,7 @@
                     onPress={() => {
                     setCategory('Peces');
                     setShowCategoryDropdown(false);
+                    checkFormValidityAndChanges({ category: 'Peces' });
                     }}
                 >
                     <FontAwesome5 name="fish" size={18} color={category === 'Peces' ? '#9C27B0' : '#666'} />
@@ -430,6 +445,7 @@
                     onPress={() => {
                     setStatus('Inactivo');
                     setShowStatusDropdown(false);
+                    checkFormValidityAndChanges({ status: 'Inactivo' });
                     }}
                 >
                     <Text style={[styles.statusButtonText, status === 'Inactivo' && styles.statusButtonTextActive]}>
@@ -470,7 +486,11 @@
                 </TouchableOpacity>
             </View>
             </View>
+            
+            {/* Espaciado adicional para mejor scroll */}
+            <View style={{ height: 50 }} />
         </ScrollView>
+        </KeyboardAvoidingView>
 
         {/* Success Modal */}
         <Modal
@@ -528,7 +548,7 @@
     }
 
     const styles = StyleSheet.create({
-    container: { 
+    scrollContainer: { 
         flexGrow: 1,
         backgroundColor: '#fff',
         paddingBottom: 30,
@@ -540,6 +560,7 @@
         paddingHorizontal: 20,
         paddingVertical: 15,
         paddingTop: 40,
+        backgroundColor: '#fff',
     },
     title: {
         fontSize: 18,

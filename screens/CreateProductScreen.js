@@ -8,7 +8,6 @@ import {
   ScrollView,
   Image,
   Alert,
-  Modal,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -300,244 +299,96 @@ export default function CrearProductoScreen({ navigation }) {
   return (
     <>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleCancel}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.title}>CREAR PRODUCTO</Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <Text style={styles.title}>CREAR PRODUCTO</Text>
 
-        {/* Card Container */}
-        <View style={styles.card}>
-          {/* Category Icons */}
-          <View style={styles.categoryContainer}>
-            <TouchableOpacity
-              style={[styles.categoryButton, category === 'Canes' && styles.categoryButtonActive]}
-              onPress={() => {
-                setCategory('Canes');
-                checkFormValidity({ category: 'Canes' });
-              }}
-            >
-              <FontAwesome5 name="dog" size={24} color={category === 'Canes' ? '#fff' : '#9C27B0'} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.categoryButton, category === 'Felinos' && styles.categoryButtonActive]}
-              onPress={() => setCategory('Felinos')}
-            >
-              <FontAwesome5 name="cat" size={24} color={category === 'Felinos' ? '#fff' : '#9C27B0'} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.categoryButton, category === 'Peces' && styles.categoryButtonActive]}
-              onPress={() => setCategory('Peces')}
-            >
-              <FontAwesome5 name="fish" size={24} color={category === 'Peces' ? '#fff' : '#9C27B0'} />
-            </TouchableOpacity>
-          </View>
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+      ) : (
+        <Text style={styles.noImage}>Sin imagen cargada</Text>
+      )}
 
-          {/* Nombre del Producto */}
-          <Text style={styles.label}>Nombre del Producto <Text style={styles.asterisk}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej: Pedigree"
-            value={name}
-            onChangeText={handleNameChange}
-            maxLength={30}
-          />
-          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+      <TouchableOpacity style={styles.imageButton} onPress={handleSelectImage}>
+        <Text style={styles.imageButtonText}>Seleccionar Imagen</Text>
+      </TouchableOpacity>
 
-          {/* Precio */}
-           <Text style={styles.label}>Precio <Text style={styles.asterisk}>*</Text></Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="$ 0"
-                  keyboardType="numeric"
-                  value={price}
-                  onChangeText={(text) => {
-                      const numericValue = parseFloat(text);
-                      if (numericValue < 0) {
-                        setPriceError('El precio no puede ser negativo');
-                      } else {
-                        setPriceError('');
-                        setPrice(text);
-                        checkFormValidity({ price: text });
-                      }
-                    }}
-                      maxLength={10}
-              />
-            {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
+      <TextInput
+        style={styles.input}
+        placeholder="Nombre del Producto"
+        value={name}
+        onChangeText={handleNameChange}
+        maxLength={50}
+      />
+      {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
-          {/* Stock y Stock Mínimo */}
-          <View style={styles.row}>
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Stock <Text style={styles.asterisk}>*</Text></Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                keyboardType="numeric"
-                value={stock}
-                onChangeText={handleStockChange}
-                maxLength={10}
-              />
-              {stockError ? <Text style={styles.errorText}>{stockError}</Text> : null}
-            </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Precio"
+        keyboardType="numeric"
+        value={price}
+        onChangeText={setPrice}
+      />
+      {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
 
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Stock Mínimo <Text style={styles.asterisk}>*</Text></Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                keyboardType="numeric"
-                value={minStock}
-                onChangeText={handleMinStockChange}
-                maxLength={10}
-              />
-              {minStockError ? <Text style={styles.errorText}>{minStockError}</Text> : null}
-            </View>
-          </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Stock"
+        keyboardType="numeric"
+        value={stock}
+        onChangeText={handleStockChange}
+        maxLength={10}
+      />
+      {stockError ? <Text style={styles.errorText}>{stockError}</Text> : null}
 
-          {/* Estado */}
-          <Text style={styles.label}>Estado <Text style={styles.asterisk}>*</Text></Text>
-          <View style={styles.statusContainer}>
-            <TouchableOpacity
-              style={[styles.statusButton, status === 'Activo' && styles.statusButtonActive]}
-              onPress={() => {
-                setStatus('Activo');
-                checkFormValidity({ status: 'Activo' });
-              }}
-            >
-              <Text style={[styles.statusButtonText, status === 'Activo' && styles.statusButtonTextActive]}>
-                Activo
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.statusButton, status === 'Inactivo' && styles.statusButtonActive]}
-              onPress={() => setStatus('Inactivo')}
-            >
-              <Text style={[styles.statusButtonText, status === 'Inactivo' && styles.statusButtonTextActive]}>
-                Inactivo
-              </Text>
-            </TouchableOpacity>
-          </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Stock Mínimo"
+        keyboardType="numeric"
+        value={minStock}
+        onChangeText={handleMinStockChange}
+        maxLength={10}
+      />
+      {minStockError ? <Text style={styles.errorText}>{minStockError}</Text> : null}
 
-          {/* Descripción */}
-          <Text style={styles.label}>Descripción</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Ej: Bolsa de 15 kg , botella 1,5 L"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-          />
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={status}
+          onValueChange={(itemValue) => setStatus(itemValue)}
+        >
+          <Picker.Item label="Activo" value="Activo" />
+          <Picker.Item label="Inactivo" value="Inactivo" />
+        </Picker>
+      </View>
 
-          {/* Imagen del Producto */}
-          <Text style={styles.label}>Imagen del Producto</Text>
-          <TouchableOpacity style={styles.imageButton} onPress={handleSelectImage}>
-            <Text style={styles.imageButtonText}>
-              Seleccionar Archivo
-            </Text>
-            <Text style={styles.imageButtonSubtext}>
-              {imageUri ? '1 archivo seleccionado' : 'Ningún archivo seleccionado'}
-            </Text>
-          </TouchableOpacity>
+      <TextInput
+        style={[styles.input, { height: 80 }]}
+        placeholder="Descripción"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+      />
 
-          {imageUri && (
-            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-          )}
-
-          {/* Botones de Acción */}
-          <View style={styles.buttonRow}>
-            <TouchableOpacity 
-              style={[styles.createButton, (loading || !formValid || !hasChanges) && styles.createButtonDisabled]} 
-              onPress={handleSave}
-              disabled={loading || !formValid || !hasChanges}
-            >
-              <Text style={styles.createButtonText}>
-                {loading ? 'CREANDO...' : 'CREAR'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Success Modal */}
-      <Modal
-        visible={successModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.successModalOverlay}>
-          <View style={styles.successModalContent}>
-            {/* Animal Icon Animation */}
-            <View style={[styles.successIconContainer, styles.animalIconContainer]}>
-              {category === 'Canes' && (
-                <FontAwesome5 
-                  name="dog" 
-                  size={60} 
-                  color="#9C27B0"
-                  style={styles.animalIcon} 
-                />
-              )}
-              {category === 'Felinos' && (
-                <FontAwesome5 
-                  name="cat" 
-                  size={60} 
-                  color="#9C27B0"
-                  style={styles.animalIcon} 
-                />
-              )}
-              {category === 'Peces' && (
-                <FontAwesome5 
-                  name="fish" 
-                  size={60} 
-                  color="#9C27B0"
-                  style={styles.animalIcon} 
-                />
-              )}
-              <View style={styles.checkmarkOverlay}>
-                <Ionicons name="checkmark-circle" size={30} color="#4CAF50" />
-              </View>
-            </View>
-            
-            {/* Title */}
-            <Text style={styles.successModalTitle}>¡Producto Creado!</Text>
-            
-            {/* Message */}
-            <Text style={styles.successModalText}>
-              El producto se guardó correctamente en el inventario
-            </Text>
-          </View>
-        </View>
-      </Modal>
-
-      <Toast />
+      <View style={styles.buttonRow}>
+        <TouchableOpacity 
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
+          onPress={handleSave}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'GUARDANDO...' : 'GUARDAR'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+          <Text style={styles.buttonText}>CANCELAR</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+    <Toast />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flexGrow: 1,
-    backgroundColor: '#fff',
-    paddingBottom: 30,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: 40,
-  },
+  container: { padding: 20, backgroundColor: '#fff' },
   title: {
     fontSize: 18,
     fontWeight: 'bold',

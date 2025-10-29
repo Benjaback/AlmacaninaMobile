@@ -45,7 +45,9 @@ export default function ProductScreen({ navigation, route }) {
             name: data.name || '',
             price: data.price ?? '',
             stock: data.stock ?? 0,
+            minStock: data.minStock ?? null, // ✅ AGREGADO
             status: data.status || '',
+            category: data.category || '', // ✅ AGREGADO
             description: data.description || '',
             category: data.category || null,
             image: data.imageUri || data.image || null,

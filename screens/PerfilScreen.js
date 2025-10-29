@@ -16,7 +16,7 @@ import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
@@ -29,6 +29,8 @@ export default function PantallaPerfil({ navigation }) {
   
   // Estados para ImagePicker
   const [userImage, setUserImage] = useState(null);
+  // Estado para modal de imagen ampliada
+  const [imageModalVisible, setImageModalVisible] = useState(false);
   // Estados para cambio de contraseña
   const [modalVisible, setModalVisible] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -51,6 +53,37 @@ export default function PantallaPerfil({ navigation }) {
     }
     // Toma la primera letra del primer nombre y la primera letra del ultimo nombre y las convierte en mayuscula
     return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
+  // Función para guardar imagen en Firestore
+  const saveImageToFirestore = async (imageUri) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      // Actualizar documento en Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        profileImage: imageUri,
+        updatedAt: new Date().toISOString()
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Foto actualizada',
+        text2: 'Tu foto de perfil se guardó correctamente',
+        visibilityTime: 3000,
+      });
+
+    } catch (error) {
+      console.error('Error guardando imagen:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error al guardar',
+        text2: 'No se pudo guardar la foto. Inténtalo de nuevo.',
+        visibilityTime: 3000,
+      });
+    }
   };
 
   // manejar la selección de imagen
@@ -105,8 +138,12 @@ export default function PantallaPerfil({ navigation }) {
       });
 
       if (!result.canceled) {
-        setUserImage(result.assets[0].uri);
-        console.log('Imagen tomada:', result.assets[0].uri);
+        const imageUri = result.assets[0].uri;
+        setUserImage(imageUri);
+        console.log('Imagen tomada:', imageUri);
+        
+        // Guardar automáticamente en Firestore
+        await saveImageToFirestore(imageUri);
       }
     } catch (error) {
       console.error('Error al tomar foto:', error);
@@ -142,8 +179,12 @@ export default function PantallaPerfil({ navigation }) {
       });
 
       if (!result.canceled) {
-        setUserImage(result.assets[0].uri);
-        console.log('Imagen seleccionada:', result.assets[0].uri);
+        const imageUri = result.assets[0].uri;
+        setUserImage(imageUri);
+        console.log('Imagen seleccionada:', imageUri);
+        
+        // Guardar automáticamente en Firestore
+        await saveImageToFirestore(imageUri);
       }
     } catch (error) {
       console.error('Error al seleccionar imagen:', error);
@@ -241,6 +282,11 @@ export default function PantallaPerfil({ navigation }) {
                               `${userData.firstName} ${userData.lastName}` : '') || 
                              user.displayName || '';
               
+              // Cargar imagen de perfil desde Firestore
+              if (userData.profileImage) {
+                setUserImage(userData.profileImage);
+              }
+              
               if (fullName && fullName.trim() !== '') {
                 setUserName(fullName);
                 setUserInitials(getInitials(fullName));
@@ -324,6 +370,12 @@ export default function PantallaPerfil({ navigation }) {
           <TouchableOpacity 
             style={styles.avatarContainer}
             onPress={handleImagePicker}
+            onLongPress={() => {
+              if (userImage) {
+                setImageModalVisible(true);
+              }
+            }}
+            delayLongPress={500}
           >
             <View style={styles.avatar}>
               {userImage ? (
@@ -531,6 +583,41 @@ export default function PantallaPerfil({ navigation }) {
             </View>
           </View>
         </Modal>
+
+        {/* Modal para ver imagen de perfil ampliada */}
+        <Modal
+          visible={imageModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setImageModalVisible(false)}
+        >
+          <View style={styles.imageModalOverlay}>
+            <TouchableOpacity 
+              style={styles.imageModalContainer}
+              activeOpacity={1}
+              onPress={() => setImageModalVisible(false)}
+            >
+              <View style={styles.imageModalContent}>
+                
+                {/* Imagen ampliada */}
+                {userImage && (
+                  <Image 
+                    source={{ uri: userImage }} 
+                    style={styles.fullImage}
+                    resizeMode="contain"
+                  />
+                )}
+                
+                {/* Información adicional */}
+                <View style={styles.imageModalInfo}>
+                  <Text style={styles.imageModalTitle}>Foto de Perfil</Text>
+                  <Text style={styles.imageModalSubtitle}>Toca para cerrar</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
         {/* Espaciado inferior */}
         <View style={{ height: 30 }} />
       </ScrollView>
@@ -769,5 +856,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000ff',
     marginLeft: 10,
+  },
+  
+  // Estilos para modal de imagen ampliada
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  imageModalContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  fullImage: {
+    width: '90%',
+    height: '70%',
+    borderRadius: 20,
+  },
+  imageModalInfo: {
+    position: 'absolute',
+    bottom: 80,
+    alignItems: 'center',
+  },
+  imageModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  imageModalSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 });
