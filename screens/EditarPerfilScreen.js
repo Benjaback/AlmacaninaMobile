@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
@@ -14,6 +16,88 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
+
+//paleta de colores
+const COLORS = {
+  primaryPurple: '#8F08AA',
+  secondaryYellow: '#FFC107',
+  textDark: '#212121',
+  textLight: '#FFFFFF',
+  backgroundLight: '#f5f5f5',
+  cardBackground: '#FFFFFF',
+  shadowColor: '#000000',
+  buttonText: '#FFFFFF',
+  lowStockRed: '#D32F2F',
+  safeStockGreen: '#4CAF50',
+};
+
+// --- COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
+const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, confirmText = 'ACEPTAR', cancelText, type = 'default' }) => {
+  const { primaryPurple, secondaryYellow, textLight, textDark, lowStockRed } = COLORS;
+  
+  let accentColor = primaryPurple;
+  let confirmBg = primaryPurple;
+  let cancelBg = secondaryYellow;
+  let cancelTextColor = textDark;
+
+  if (type === 'error') {
+    accentColor = lowStockRed;
+    confirmBg = lowStockRed;
+  } else if (type === 'info') {
+    accentColor = '#03A9F4';
+    confirmBg = primaryPurple;
+  }
+  
+  if (!onCancel) {
+    confirmBg = accentColor;
+  }
+
+  if (!isVisible) return null;
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={isVisible}
+      onRequestClose={onCancel || onConfirm}
+    >
+      <Pressable style={alertStyles.centeredView} onPress={onCancel || onConfirm}>
+        <View style={[alertStyles.modalView, { borderTopColor: accentColor }]}>
+          <Text style={[alertStyles.modalTitle, { color: accentColor }]}>{title}</Text>
+          <Text style={alertStyles.modalMessage}>{message}</Text>
+
+          <View style={alertStyles.buttonContainer}>
+            {onCancel && (
+              <TouchableOpacity
+                style={[alertStyles.button, { backgroundColor: cancelBg }]}
+                onPress={onCancel}
+                activeOpacity={0.8}
+              >
+                <Text style={[alertStyles.textStyle, { color: cancelTextColor }]}>
+                  {cancelText || 'CANCELAR'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[
+                onCancel ? alertStyles.button : alertStyles.singleButton, 
+                { backgroundColor: confirmBg }
+              ]}
+              onPress={onConfirm}
+              activeOpacity={0.8}
+            >
+              <Text style={[alertStyles.textStyle, { color: textLight }]}>
+                {confirmText}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+};
+// --- FIN COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
 
 // Componente separado para mostrar cada campo de datos
 const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", isEditable = false, isEditing, onChangeText, error, keyboardType = "default", maxLength, prefix }) => {
@@ -110,6 +194,30 @@ export default function EditarPerfilScreen({ navigation }) {
     dni: '',
     phone: ''
   });
+
+  // ESTADO para controlar el modal de alerta/confirmación
+  const [customAlertData, setCustomAlertData] = useState({
+    isVisible: false,
+    title: '',
+    message: '',
+    onConfirm: () => setCustomAlertData(prev => ({ ...prev, isVisible: false })),
+    onCancel: null,
+    confirmText: 'ACEPTAR',
+    type: 'default',
+  });
+  
+  // Función centralizada para mostrar el CustomAlertModal
+  const showCustomAlert = (title, message, onConfirm, onCancel = null, confirmText = 'ACEPTAR', type = 'default') => {
+    setCustomAlertData({
+      isVisible: true,
+      title,
+      message,
+      onConfirm,
+      onCancel,
+      confirmText,
+      type,
+    });
+  };
 
   // Referencias para debounce de validación (evitar re-renders)
   const dniValidationTimeout = useRef(null);
@@ -375,70 +483,81 @@ export default function EditarPerfilScreen({ navigation }) {
 
   // Función para guardar los cambios
   const handleSaveChanges = async () => {
-    // Mostrar alerta de confirmación antes de guardar
-    Alert.alert(
+    // Mostrar alerta de confirmación antes de guardar usando CustomAlertModal
+    const onConfirm = async () => {
+      setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+      
+      // Proceder con la validación y guardado
+      if (!(await validateData())) {
+        return;
+      }
+
+      if (!currentUserId) {
+        showCustomAlert(
+          'Error',
+          'No se pudo identificar al usuario',
+          () => setCustomAlertData(prev => ({ ...prev, isVisible: false })),
+          null,
+          'ENTENDIDO',
+          'error'
+        );
+        return;
+      }
+
+      try {
+        // Preparar datos actualizados
+        const updatedData = {
+          firstName: editFirstName.trim(),
+          lastName: editLastName.trim(),
+          dni: editDni.trim(),
+          phone: editPhone.trim() ? `+54 ${editPhone.trim()}` : '', // Agregar +54 al teléfono
+          fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
+          updatedAt: new Date().toISOString()
+        };
+
+        // Actualizar en Firestore
+        await updateDoc(doc(db, 'users', currentUserId), updatedData);
+
+        // Actualizar estado local
+        setUserData(prev => ({
+          ...prev,
+          ...updatedData
+        }));
+
+        // Salir del modo edición
+        setIsEditing(false);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Perfil actualizado',
+          text2: 'Los cambios se guardaron correctamente',
+          visibilityTime: 3000,
+        });
+
+      } catch (error) {
+        console.error('Error guardando datos:', error);
+        showCustomAlert(
+          'Error',
+          'No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.',
+          () => setCustomAlertData(prev => ({ ...prev, isVisible: false })),
+          null,
+          'ENTENDIDO',
+          'error'
+        );
+      }
+    };
+
+    const onCancel = () => {
+      setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+    };
+
+    showCustomAlert(
       'Confirmar cambios',
       '¿Estás seguro de que quieres guardar los cambios en tu perfil?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Guardar',
-          style: 'default',
-          onPress: async () => {
-            // Proceder con la validación y guardado
-            if (!(await validateData())) {
-              return;
-            }
-
-            if (!currentUserId) {
-              Alert.alert('Error', 'No se pudo identificar al usuario');
-              return;
-            }
-
-            try {
-              // Preparar datos actualizados
-              const updatedData = {
-                firstName: editFirstName.trim(),
-                lastName: editLastName.trim(),
-                dni: editDni.trim(),
-                phone: editPhone.trim() ? `+54 ${editPhone.trim()}` : '', // Agregar +54 al teléfono
-                fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
-                updatedAt: new Date().toISOString()
-              };
-
-              // Actualizar en Firestore
-              await updateDoc(doc(db, 'users', currentUserId), updatedData);
-
-              // Actualizar estado local
-              setUserData(prev => ({
-                ...prev,
-                ...updatedData
-              }));
-
-              // Salir del modo edición
-              setIsEditing(false);
-
-              Toast.show({
-                type: 'success',
-                text1: 'Perfil actualizado',
-                text2: 'Los cambios se guardaron correctamente',
-                visibilityTime: 3000,
-              });
-
-            } catch (error) {
-              console.error('Error guardando datos:', error);
-              Alert.alert(
-                'Error',
-                'No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.',
-                [{ text: 'Entendido' }]
-              );
-            }
-          },
-        },
-      ]
+      onConfirm,
+      onCancel,
+      'GUARDAR',
+      'default'
     );
   };
 
@@ -446,29 +565,29 @@ export default function EditarPerfilScreen({ navigation }) {
   const handleCancelEdit = () => {
     // Verificar si hay cambios sin guardar
     if (hasChanges()) {
-      Alert.alert(
+      const onConfirm = () => {
+        setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+        // Restaurar valores originales
+        initializeEditFields(userData);
+        
+        // Limpiar errores
+        clearErrors();
+        
+        // Salir del modo edición
+        setIsEditing(false);
+      };
+
+      const onCancel = () => {
+        setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+      };
+
+      showCustomAlert(
         'Descartar cambios',
         '¿Estás seguro de que quieres descartar los cambios realizados?',
-        [
-          {
-            text: 'Continuar editando',
-            style: 'cancel',
-          },
-          {
-            text: 'Descartar',
-            style: 'destructive',
-            onPress: () => {
-              // Restaurar valores originales
-              initializeEditFields(userData);
-              
-              // Limpiar errores
-              clearErrors();
-              
-              // Salir del modo edición
-              setIsEditing(false);
-            },
-          },
-        ]
+        onConfirm,
+        onCancel,
+        'DESCARTAR',
+        'error'
       );
     } else {
       // Si no hay cambios, cancelar directamente
@@ -842,6 +961,18 @@ export default function EditarPerfilScreen({ navigation }) {
         <View style={{ height: 120 }} />
         
       </ScrollView>
+      
+      {/* --- MODAL DE ALERTA/CONFIRMACIÓN PERSONALIZADO --- */}
+      <CustomAlertModal
+        isVisible={customAlertData.isVisible}
+        title={customAlertData.title}
+        message={customAlertData.message}
+        onConfirm={customAlertData.onConfirm}
+        onCancel={customAlertData.onCancel}
+        confirmText={customAlertData.confirmText}
+        type={customAlertData.type}
+      />
+      
       <Toast />
     </SafeAreaView>
   );
@@ -1139,5 +1270,66 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#8F08AA',
     marginLeft: 8,
+  },
+});
+
+// --- ESTILOS DEL MODAL DE ALERTA PERSONALIZADO ---
+const alertStyles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  modalView: {
+    width: '85%',
+    margin: 20,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    borderTopWidth: 5,
+    borderTopColor: COLORS.primaryPurple, // Acento dinámico
+  },
+  modalTitle: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.primaryPurple,
+  },
+  modalMessage: {
+    marginBottom: 25,
+    textAlign: 'center',
+    fontSize: 16,
+    color: COLORS.textDark,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    borderRadius: 12,
+    padding: 12,
+    elevation: 2,
+    width: '48%',
+  },
+  singleButton: {
+    borderRadius: 12,
+    padding: 12,
+    elevation: 2,
+    width: '100%',
+  },
+  textStyle: {
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fontSize: 16,
   },
 });
