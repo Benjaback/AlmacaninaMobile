@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -38,6 +39,12 @@ export default function PantallaPerfil({ navigation }) {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [changeLoading, setChangeLoading] = useState(false);
+  // Mostrar requisitos al abrir teclado
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [passwordLength, setPasswordLength] = useState(false);
+  const [hasUppercase, setHasUppercase] = useState(false);
+  const [hasLowercase, setHasLowercase] = useState(false);
+  const [hasNumber, setHasNumber] = useState(false);
 
   // Función para generar iniciales del nombre
   const getInitials = (name) => {
@@ -214,6 +221,16 @@ export default function PantallaPerfil({ navigation }) {
     );
   };
 
+  
+
+  // Validación en tiempo real de la nueva contraseña
+  const validatePassword = (text) => {
+    setPasswordLength(text.length >= 6);
+    setHasUppercase(/[A-Z]/.test(text));
+    setHasLowercase(/[a-z]/.test(text));
+    setHasNumber(/[0-9]/.test(text));
+  };
+
   // useEffect para obtener datos del usuario autenticado
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -270,6 +287,21 @@ export default function PantallaPerfil({ navigation }) {
     });
 
     return unsubscribe; // Limpiar el listener al desmontar
+  }, []);
+
+  // Listeners del teclado para mostrar/ocultar los requisitos
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setShowPasswordRequirements(true);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setShowPasswordRequirements(false);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, []);
   // esto sirve para los iconos
   const MenuItem = ({ icon, title, subtitle, onPress, iconType = "FontAwesome" }) => {
@@ -385,8 +417,8 @@ export default function PantallaPerfil({ navigation }) {
                 keyboardShouldPersistTaps="handled"
                 enableOnAndroid={true}
                 enableAutomaticScroll={true}
-                extraHeight={120}
-                extraScrollHeight={120}
+                extraHeight={10}
+                extraScrollHeight={5}
                 resetScrollToCoords={{ x: 0, y: 0 }}
                 showsVerticalScrollIndicator={false}
               >
@@ -397,31 +429,54 @@ export default function PantallaPerfil({ navigation }) {
                 <View style={styles.inputRow}>
                   <TextInput
                     value={currentPassword}
-                    onChangeText={setCurrentPassword}
+                    onChangeText={(t) => { setCurrentPassword(t); }}
                     placeholder="Contraseña actual"
                     secureTextEntry={!showCurrent}
                     style={styles.inputField}
                     editable={!changeLoading}
                   />
                   <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)} style={styles.showBtn}>
-                    <Text style={styles.showText}>{showCurrent ? 'Ocultar' : 'Mostrar'}</Text>
+                    <FontAwesome name={showCurrent ? 'eye-slash' : 'eye'} size={20} color="#8F08AA" />
                   </TouchableOpacity>
                 </View>
+                
 
                 <Text style={styles.inputLabel}>Nueva contraseña</Text>
                 <View style={styles.inputRow}>
                   <TextInput
                     value={newPassword}
-                    onChangeText={setNewPassword}
+                    onChangeText={(t) => { setNewPassword(t); validatePassword(t); }}
                     placeholder="Nueva contraseña"
                     secureTextEntry={!showNew}
                     style={styles.inputField}
                     editable={!changeLoading}
                   />
                   <TouchableOpacity onPress={() => setShowNew(!showNew)} style={styles.showBtn}>
-                    <Text style={styles.showText}>{showNew ? 'Ocultar' : 'Mostrar'}</Text>
+                    <FontAwesome name={showNew ? 'eye-slash' : 'eye'} size={20} color="#8F08AA" />
                   </TouchableOpacity>
                 </View>
+
+                {showPasswordRequirements && (
+                  <View style={styles.passwordRequirements}>
+                    <Text style={styles.requirementsTitle}>La contraseña debe tener:</Text>
+                    <View style={styles.requirementItem}>
+                      <FontAwesome name={passwordLength ? 'check' : 'close'} size={16} color={passwordLength ? '#2e7d32' : '#B50000'} />
+                      <Text style={[styles.requirementText, passwordLength && styles.requirementMet]}>al menos 6 caracteres</Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                      <FontAwesome name={hasUppercase ? 'check' : 'close'} size={16} color={hasUppercase ? '#2e7d32' : '#B50000'} />
+                      <Text style={[styles.requirementText, hasUppercase && styles.requirementMet]}>incluir al menos una letra mayúscula</Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                      <FontAwesome name={hasLowercase ? 'check' : 'close'} size={16} color={hasLowercase ? '#2e7d32' : '#B50000'} />
+                      <Text style={[styles.requirementText, hasLowercase && styles.requirementMet]}>incluir al menos una letra minúscula</Text>
+                    </View>
+                    <View style={styles.requirementItem}>
+                      <FontAwesome name={hasNumber ? 'check' : 'close'} size={16} color={hasNumber ? '#2e7d32' : '#B50000'} />
+                      <Text style={[styles.requirementText, hasNumber && styles.requirementMet]}>incluir al menos un número</Text>
+                    </View>
+                  </View>
+                )}
 
                   <Text style={styles.inputLabel}>Confirmar nueva contraseña</Text>
                   <View style={styles.inputRow}>
@@ -434,7 +489,7 @@ export default function PantallaPerfil({ navigation }) {
                       editable={!changeLoading}
                     />
                     <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.showBtn}>
-                      <Text style={styles.showText}>{showConfirm ? 'Ocultar' : 'Mostrar'}</Text>
+                      <FontAwesome name={showConfirm ? 'eye-slash' : 'eye'} size={20} color="#8F08AA" />
                     </TouchableOpacity>
                   </View>
 
@@ -448,15 +503,20 @@ export default function PantallaPerfil({ navigation }) {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonPrimary]}
+                    style={[
+                      styles.modalButton,
+                      styles.modalButtonPrimary,
+                      (changeLoading || !(passwordLength && hasUppercase && hasLowercase && hasNumber && newPassword === confirmPassword)) && styles.modalButtonDisabled,
+                    ]}
                     onPress={async () => {
                       // Validaciones básicas
                       if (!currentPassword || !newPassword || !confirmPassword) {
                         Toast.show({ type: 'error', text1: 'Completa todos los campos' });
                         return;
                       }
-                      if (newPassword.length < 6) {
-                        Toast.show({ type: 'error', text1: 'La contraseña debe tener al menos 6 caracteres' });
+                      // Requerimientos de contraseña
+                      if (!(passwordLength && hasUppercase && hasLowercase && hasNumber)) {
+                        Toast.show({ type: 'error', text1: 'La nueva contraseña no cumple los requisitos' });
                         return;
                       }
                       if (newPassword !== confirmPassword) {
@@ -497,7 +557,7 @@ export default function PantallaPerfil({ navigation }) {
                       }
                       setChangeLoading(false);
                     }}
-                    disabled={changeLoading}
+                    disabled={changeLoading || !(passwordLength && hasUppercase && hasLowercase && hasNumber && newPassword === confirmPassword)}
                   >
                     {changeLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalButtonText}>Guardar</Text>}
                   </TouchableOpacity>
@@ -637,6 +697,62 @@ const styles = StyleSheet.create({
   },
   modalButtonSecondary: {
     backgroundColor: '#6c757d',
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#9a9a9a',
+  },
+  verifyBtn: {
+    marginLeft: 8,
+    backgroundColor: '#4a90e2',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifyText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  errorSmall: {
+    color: '#B50000',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  successSmall: {
+    color: '#2e7d32',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  passwordRequirements: {
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#efe6fb',
+  },
+  requirementsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#444',
+    marginBottom: 6,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  requirementText: {
+    marginLeft: 8,
+    color: '#666',
+    fontSize: 13,
+  },
+  requirementMet: {
+    color: '#2e7d32',
+    fontWeight: '600',
   },
   avatarText: {
     fontSize: 36,
