@@ -252,10 +252,10 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     top: 25,
-    color: '#007AFF',
+    color: '#000000ff',
   },
   signUp: { /* texto registrarse del singUpText */
-    color: '#007AFF',
+    color: '#8F08AA',
     fontWeight: 'bold',
     fontSize: 14,
   },
