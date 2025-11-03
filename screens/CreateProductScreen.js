@@ -9,6 +9,8 @@ import {
   Image,
   Alert,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,6 +28,8 @@ export default function CrearProductoScreen({ navigation }) {
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState('');
+  const [formValid, setFormValid] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   
   // Estado para modal de éxito
   const [successModalVisible, setSuccessModalVisible] = useState(false);
@@ -37,10 +41,43 @@ export default function CrearProductoScreen({ navigation }) {
   const [minStockError, setMinStockError] = useState('');
 
   // Función para validar y filtrar el nombre en tiempo real
+  const checkFormValidity = (updatedValues = {}) => {
+    const currentValues = {
+      name: updatedValues.name !== undefined ? updatedValues.name : name,
+      price: updatedValues.price !== undefined ? updatedValues.price : price,
+      stock: updatedValues.stock !== undefined ? updatedValues.stock : stock,
+      minStock: updatedValues.minStock !== undefined ? updatedValues.minStock : minStock,
+      category: updatedValues.category !== undefined ? updatedValues.category : category,
+      status: updatedValues.status !== undefined ? updatedValues.status : status,
+    };
+
+    const isValid = 
+      currentValues.name.trim() !== '' &&
+      currentValues.price?.toString().trim() !== '' &&
+      currentValues.stock?.toString().trim() !== '' &&
+      currentValues.minStock?.toString().trim() !== '' &&
+      currentValues.category !== '' &&
+      currentValues.status !== '';
+
+    // Verificar si hay cambios
+    const hasChanges = 
+      currentValues.name.trim() !== '' ||
+      currentValues.price?.toString().trim() !== '' ||
+      currentValues.stock?.toString().trim() !== '' ||
+      currentValues.minStock?.toString().trim() !== '' ||
+      currentValues.category !== '' ||
+      currentValues.status !== 'Activo' ||
+      currentValues.description !== '';
+
+    setFormValid(isValid);
+    setHasChanges(hasChanges);
+  };
+
   const handleNameChange = (text) => {
     // Permitir solo letras, espacios y acentos
     const filteredText = text.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     setName(filteredText);
+    checkFormValidity({ name: filteredText });
   };
 
   // Función para validar y filtrar el stock en tiempo real
@@ -48,6 +85,7 @@ export default function CrearProductoScreen({ navigation }) {
     // Permitir solo números enteros (sin puntos ni comas)
     const filteredText = text.replace(/[^0-9]/g, '');
     setStock(filteredText);
+    checkFormValidity({ stock: filteredText });
   };
 
   // Función para validar y filtrar el stock mínimo en tiempo real
@@ -55,6 +93,7 @@ export default function CrearProductoScreen({ navigation }) {
     // Permitir solo números enteros (sin puntos ni comas)
     const filteredText = text.replace(/[^0-9]/g, '');
     setMinStock(filteredText);
+    checkFormValidity({ minStock: filteredText });
   };
 
   const handleSelectImage = async () => {
@@ -242,7 +281,7 @@ export default function CrearProductoScreen({ navigation }) {
       setTimeout(() => {
         setSuccessModalVisible(false);
         navigation.goBack();
-      }, 2000);
+      }, 3000);
 
     } catch (error) {
       console.error('Error guardando producto:', error);
@@ -262,159 +301,191 @@ export default function CrearProductoScreen({ navigation }) {
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleCancel}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.title}>CREAR PRODUCTO</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        {/* Card Container */}
-        <View style={styles.card}>
-          {/* Category Icons */}
-          <View style={styles.categoryContainer}>
-            <TouchableOpacity
-              style={[styles.categoryButton, category === 'Canes' && styles.categoryButtonActive]}
-              onPress={() => setCategory('Canes')}
-            >
-              <FontAwesome5 name="dog" size={24} color={category === 'Canes' ? '#fff' : '#9C27B0'} />
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
+          style={{ flex: 1 }}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleCancel}>
+              <Ionicons name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.categoryButton, category === 'Felinos' && styles.categoryButtonActive]}
-              onPress={() => setCategory('Felinos')}
-            >
-              <FontAwesome5 name="cat" size={24} color={category === 'Felinos' ? '#fff' : '#9C27B0'} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.categoryButton, category === 'Peces' && styles.categoryButtonActive]}
-              onPress={() => setCategory('Peces')}
-            >
-              <FontAwesome5 name="fish" size={24} color={category === 'Peces' ? '#fff' : '#9C27B0'} />
-            </TouchableOpacity>
+            <Text style={styles.title}>CREAR PRODUCTO</Text>
+            <View style={{ width: 24 }} />
           </View>
 
-          {/* Nombre del Producto */}
-          <Text style={styles.label}>Nombre del Producto</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej: Pedigree"
-            value={name}
-            onChangeText={handleNameChange}
-            maxLength={50}
-          />
-          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
-
-          {/* Precio */}
-          <Text style={styles.label}>Precio</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="$ 0"
-            keyboardType="numeric"
-            value={price}
-            onChangeText={setPrice}
-          />
-          {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
-
-          {/* Stock y Stock Mínimo */}
-          <View style={styles.row}>
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Stock</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                keyboardType="numeric"
-                value={stock}
-                onChangeText={handleStockChange}
-                maxLength={10}
-              />
-              {stockError ? <Text style={styles.errorText}>{stockError}</Text> : null}
+          {/* Card Container */}
+          <View style={styles.card}>
+            {/* Category Icons */}
+            <View style={styles.categoryContainer}>
+              <TouchableOpacity
+                style={[styles.categoryButton, category === 'Canes' && styles.categoryButtonActive]}
+                onPress={() => {
+                  setCategory('Canes');
+                  checkFormValidity({ category: 'Canes' });
+                }}
+              >
+                <FontAwesome5 name="dog" size={24} color={category === 'Canes' ? '#fff' : '#9C27B0'} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.categoryButton, category === 'Felinos' && styles.categoryButtonActive]}
+                onPress={() => setCategory('Felinos')}
+              >
+                <FontAwesome5 name="cat" size={24} color={category === 'Felinos' ? '#fff' : '#9C27B0'} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.categoryButton, category === 'Peces' && styles.categoryButtonActive]}
+                onPress={() => setCategory('Peces')}
+              >
+                <FontAwesome5 name="fish" size={24} color={category === 'Peces' ? '#fff' : '#9C27B0'} />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Stock Mínimo</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                keyboardType="numeric"
-                value={minStock}
-                onChangeText={handleMinStockChange}
-                maxLength={10}
-              />
-              {minStockError ? <Text style={styles.errorText}>{minStockError}</Text> : null}
+            {/* Nombre del Producto */}
+            <Text style={styles.label}>Nombre del Producto <Text style={styles.asterisk}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ej: Pedigree"
+              value={name}
+              onChangeText={handleNameChange}
+              maxLength={30}
+            />
+            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+
+            {/* Precio */}
+             <Text style={styles.label}>Precio <Text style={styles.asterisk}>*</Text></Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="$ 0"
+                    keyboardType="numeric"
+                    value={price}
+                    onChangeText={(text) => {
+                        // Filtrar signos negativos y solo permitir números y punto decimal
+                        const filteredText = text.replace(/[^0-9.]/g, '');
+                        
+                        // Permitir solo un punto decimal
+                        const parts = filteredText.split('.');
+                        const cleanText = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filteredText;
+                        
+                        setPrice(cleanText);
+                        checkFormValidity({ price: cleanText });
+                      }}
+                        maxLength={10}
+                />
+              {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
+
+            {/* Stock y Stock Mínimo */}
+            <View style={styles.row}>
+              <View style={styles.halfInput}>
+                <Text style={styles.label}>Stock <Text style={styles.asterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  value={stock}
+                  onChangeText={handleStockChange}
+                  maxLength={10}
+                />
+                {stockError ? <Text style={styles.errorText}>{stockError}</Text> : null}
+              </View>
+
+              <View style={styles.halfInput}>
+                <Text style={styles.label}>Stock Mínimo <Text style={styles.asterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  value={minStock}
+                  onChangeText={handleMinStockChange}
+                  maxLength={10}
+                />
+                {minStockError ? <Text style={styles.errorText}>{minStockError}</Text> : null}
+              </View>
+            </View>
+
+            {/* Estado */}
+            <Text style={styles.label}>Estado <Text style={styles.asterisk}>*</Text></Text>
+            <View style={styles.statusContainer}>
+              <TouchableOpacity
+                style={[styles.statusButton, status === 'Activo' && styles.statusButtonActive]}
+                onPress={() => {
+                  setStatus('Activo');
+                  checkFormValidity({ status: 'Activo' });
+                }}
+              >
+                <Text style={[styles.statusButtonText, status === 'Activo' && styles.statusButtonTextActive]}>
+                  Activo
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.statusButton, status === 'Inactivo' && styles.statusButtonActive]}
+                onPress={() => setStatus('Inactivo')}
+              >
+                <Text style={[styles.statusButtonText, status === 'Inactivo' && styles.statusButtonTextActive]}>
+                  Inactivo
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Descripción */}
+            <Text style={styles.label}>Descripción</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Ej: Bolsa de 15 kg , botella 1,5 L"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={3}
+            />
+
+            {/* Imagen del Producto */}
+            <Text style={styles.label}>Imagen del Producto</Text>
+            <TouchableOpacity style={styles.imageButton} onPress={handleSelectImage}>
+              <Text style={styles.imageButtonText}>
+                Seleccionar Archivo
+              </Text>
+              <Text style={styles.imageButtonSubtext}>
+                {imageUri ? '1 archivo seleccionado' : 'Ningún archivo seleccionado'}
+              </Text>
+            </TouchableOpacity>
+
+            {imageUri && (
+              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            )}
+
+            {/* Botones de Acción */}
+            <View style={styles.buttonRow}>
+              <TouchableOpacity 
+                style={[styles.createButton, (loading || !formValid || !hasChanges) && styles.createButtonDisabled]} 
+                onPress={handleSave}
+                disabled={loading || !formValid || !hasChanges}
+              >
+                <Text style={styles.createButtonText}>
+                  {loading ? 'CREANDO...' : 'CREAR'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                <Text style={styles.cancelButtonText}>CANCELAR</Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          {/* Estado */}
-          <Text style={styles.label}>Estado</Text>
-          <View style={styles.statusContainer}>
-            <TouchableOpacity
-              style={[styles.statusButton, status === 'Activo' && styles.statusButtonActive]}
-              onPress={() => setStatus('Activo')}
-            >
-              <Text style={[styles.statusButtonText, status === 'Activo' && styles.statusButtonTextActive]}>
-                Activo
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.statusButton, status === 'Inactivo' && styles.statusButtonActive]}
-              onPress={() => setStatus('Inactivo')}
-            >
-              <Text style={[styles.statusButtonText, status === 'Inactivo' && styles.statusButtonTextActive]}>
-                Inactivo
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Descripción */}
-          <Text style={styles.label}>Descripción</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Ej: Bolsa de 15 kg , botella 1,5 L"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-          />
-
-          {/* Imagen del Producto */}
-          <Text style={styles.label}>Imagen del Producto</Text>
-          <TouchableOpacity style={styles.imageButton} onPress={handleSelectImage}>
-            <Text style={styles.imageButtonText}>
-              Seleccionar Archivo
-            </Text>
-            <Text style={styles.imageButtonSubtext}>
-              {imageUri ? '1 archivo seleccionado' : 'Ningún archivo seleccionado'}
-            </Text>
-          </TouchableOpacity>
-
-          {imageUri && (
-            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-          )}
-
-          {/* Botones de Acción */}
-          <View style={styles.buttonRow}>
-            <TouchableOpacity 
-              style={[styles.createButton, loading && styles.createButtonDisabled]} 
-              onPress={handleSave}
-              disabled={loading}
-            >
-              <Text style={styles.createButtonText}>
-                {loading ? 'CREANDO...' : 'CREAR'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>CANCELAR</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+          
+          {/* Espaciado adicional para mejor scroll */}
+          <View style={{ height: 50 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Success Modal */}
       <Modal
@@ -424,29 +495,44 @@ export default function CrearProductoScreen({ navigation }) {
       >
         <View style={styles.successModalOverlay}>
           <View style={styles.successModalContent}>
-            {/* Success Icon */}
-            <View style={styles.successIconContainer}>
-              <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
+            {/* Animal Icon Animation */}
+            <View style={[styles.successIconContainer, styles.animalIconContainer]}>
+              {category === 'Canes' && (
+                <FontAwesome5 
+                  name="dog" 
+                  size={60} 
+                  color="#9C27B0"
+                  style={styles.animalIcon} 
+                />
+              )}
+              {category === 'Felinos' && (
+                <FontAwesome5 
+                  name="cat" 
+                  size={60} 
+                  color="#9C27B0"
+                  style={styles.animalIcon} 
+                />
+              )}
+              {category === 'Peces' && (
+                <FontAwesome5 
+                  name="fish" 
+                  size={60} 
+                  color="#9C27B0"
+                  style={styles.animalIcon} 
+                />
+              )}
+              <View style={styles.checkmarkOverlay}>
+                <Ionicons name="checkmark-circle" size={30} color="#4CAF50" />
+              </View>
             </View>
             
             {/* Title */}
-            <Text style={styles.successModalTitle}>Producto Creado</Text>
+            <Text style={styles.successModalTitle}>¡Producto Creado!</Text>
             
             {/* Message */}
             <Text style={styles.successModalText}>
-              El producto se creo Exitosamente
+              El producto se guardó correctamente en el inventario
             </Text>
-            
-            {/* Button */}
-            <TouchableOpacity 
-              style={styles.successButton}
-              onPress={() => {
-                setSuccessModalVisible(false);
-                navigation.goBack();
-              }}
-            >
-              <Text style={styles.successButtonText}>ACEPTAR</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -457,7 +543,7 @@ export default function CrearProductoScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
+  scrollContainer: { 
     flexGrow: 1,
     backgroundColor: '#fff',
     paddingBottom: 30,
@@ -469,6 +555,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     paddingTop: 40,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 18,
@@ -640,6 +727,32 @@ const styles = StyleSheet.create({
   },
   successIconContainer: {
     marginBottom: 15,
+    position: 'relative',
+  },
+  animalIconContainer: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  animalIcon: {
+    transform: [{ scale: 1.2 }],
+    textShadowColor: 'rgba(156, 39, 176, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  checkmarkOverlay: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 2,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   successModalTitle: {
     fontSize: 20,
@@ -666,6 +779,11 @@ const styles = StyleSheet.create({
   successButtonText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  asterisk: {
+    color: '#FF0000',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

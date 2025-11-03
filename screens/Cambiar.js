@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Linking } from 'react-native';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../src/config/firebaseConfig';
@@ -11,18 +11,86 @@ export default function Cambiar({ navigation }) {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
 
+  // Referencias para debounce de validación
+  const emailValidationTimeout = useRef(null);
+
+  // Función para validar formato de email
+  const validateEmailFormat = (emailValue) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(emailValue);
+  };
+
+  // Función para manejar cambios en el email con validación en tiempo real
+  const handleEmailChange = useCallback((text) => {
+    // Normalizar el texto (eliminar espacios al inicio y final)
+    const normalizedText = text.trim();
+    setEmail(normalizedText);
+    
+    // Limpiar timeout anterior
+    if (emailValidationTimeout.current) {
+      clearTimeout(emailValidationTimeout.current);
+    }
+    
+    // Validación inmediata de formato básico
+    let emailErrorMsg = '';
+    
+    if (normalizedText.length > 0) {
+      // Validar longitud máxima
+      if (normalizedText.length > 254) {
+        emailErrorMsg = 'El email es demasiado largo (máximo 254 caracteres)';
+      }
+      // Validar caracteres básicos
+      else if (normalizedText.includes(' ')) {
+        emailErrorMsg = 'El email no puede contener espacios';
+      }
+      // Validar múltiples @
+      else if ((normalizedText.match(/@/g) || []).length !== 1) {
+        emailErrorMsg = 'El email debe contener exactamente un símbolo @';
+      }
+      // Validar que no empiece o termine con caracteres especiales
+      else if (/^[._%+-]|[._%+-]$/.test(normalizedText)) {
+        emailErrorMsg = 'El email no puede empezar o terminar con caracteres especiales';
+      }
+      // Validar formato completo con debounce (solo si pasó validaciones básicas)
+      else {
+        // Actualizar error inmediatamente si es válido hasta ahora
+        setEmailError('');
+        
+        // Validación completa con debounce
+        const timeout = setTimeout(() => {
+          if (!validateEmailFormat(normalizedText)) {
+            setEmailError('Por favor ingresa un email válido (ej: usuario@dominio.com)');
+          }
+        }, 500); // Esperar 500ms después de que el usuario deje de escribir
+        
+        emailValidationTimeout.current = timeout;
+        return; // Salir temprano para no setear error inmediatamente
+      }
+    }
+    
+    // Actualizar error inmediatamente para validaciones básicas
+    setEmailError(emailErrorMsg);
+  }, []);
   
   const handleEmailReset = async () => {
     setEmailError(''); // Limpiar errores previos
     
-    if (!email) {
+    // Validación mejorada antes de enviar
+    const trimmedEmail = email.trim();
+    
+    if (!trimmedEmail) {
       setEmailError('Por favor ingresa tu email.');
+      return;
+    }
+
+    if (!validateEmailFormat(trimmedEmail)) {
+      setEmailError('Por favor ingresa un email válido');
       return;
     }
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, trimmedEmail);
       Toast.show({
         type: 'success',
         text1: 'Email enviado',
@@ -88,34 +156,40 @@ export default function Cambiar({ navigation }) {
           <View style={styles.inputContainer}>
             <TextInput
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               placeholder="Ingresa tu email"
               keyboardType="email-address"
-              style={styles.input}
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              style={[
+                styles.input,
+                emailError ? styles.inputError : null
+              ]}
             />
           </View>
           {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
           <TouchableOpacity 
             onPress={handleEmailReset}
-            disabled={loading}
-            style={[styles.button, loading && { backgroundColor: '#ccc' }]}
+            disabled={loading || !!emailError || !email.trim()}
+            style={[
+              styles.button, 
+              (loading || !!emailError || !email.trim()) && styles.buttonDisabled
+            ]}
           >
-            <Text style={styles.buttonText}>
+            <Text style={[
+              styles.buttonText,
+              (loading || !!emailError || !email.trim()) && styles.buttonTextDisabled
+            ]}>
               {loading ? 'Enviando...' : 'Enviar Email '}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleEmailReset}
-            disabled={loading}
-            style={styles.backButton}
-          >
-            <Text style={styles.backButtonText}>Volver a mandar Email</Text>
-          </TouchableOpacity>
+
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             style={{ alignSelf: 'center', marginTop: 8 }}
           >
-            <Text style={{ color: '#007bff', fontSize: 13, textDecorationLine: 'underline', textAlign: 'center' }}>Volver al Login</Text>
+            <Text style={{ color: '#007bff', fontSize: 13, textDecorationLine: 'underline', textAlign: 'center' }}>¿Recordaste tu contraseña?</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAwareScrollView>
@@ -185,6 +259,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: 'transparent',
   },
+  inputError: {
+    borderColor: '#B50000',
+  },
   button: {
     backgroundColor: '#8F08AA',
     paddingVertical: 10,
@@ -195,10 +272,16 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  buttonDisabled: {
+    backgroundColor: '#cccccc',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: 'bold',
+  },
+  buttonTextDisabled: {
+    color: '#999999',
   },
   backButton: {
     backgroundColor: '#6c757d',

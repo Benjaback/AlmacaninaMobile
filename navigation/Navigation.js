@@ -47,7 +47,7 @@ function Navegacion() {
         <Stack.Screen name="Proveedores" component={PantallaProveedores} options={{ title: 'Proveedores' }} />
         <Stack.Screen name="Empleados" component={PantallaEmpleados} options={{ title: 'Empleados' }} />
         <Stack.Screen name="CrearProducto" component={CreateProductScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="EditarProducto"  component={EditarProductoScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="EditarProducto"  component={EditarProductoScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ProductScreen" component={ProductScreen} options={{ title: 'Producto'}} />
       </Stack.Navigator>
     </NavigationContainer>

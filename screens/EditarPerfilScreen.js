@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
@@ -15,8 +17,90 @@ import { auth, db } from '../src/config/firebaseConfig';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 
+//paleta de colores
+const COLORS = {
+  primaryPurple: '#8F08AA',
+  secondaryYellow: '#FFC107',
+  textDark: '#212121',
+  textLight: '#FFFFFF',
+  backgroundLight: '#f5f5f5',
+  cardBackground: '#FFFFFF',
+  shadowColor: '#000000',
+  buttonText: '#FFFFFF',
+  lowStockRed: '#D32F2F',
+  safeStockGreen: '#4CAF50',
+};
+
+// --- COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
+const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, confirmText = 'ACEPTAR', cancelText, type = 'default' }) => {
+  const { primaryPurple, secondaryYellow, textLight, textDark, lowStockRed } = COLORS;
+  
+  let accentColor = primaryPurple;
+  let confirmBg = primaryPurple;
+  let cancelBg = secondaryYellow;
+  let cancelTextColor = textDark;
+
+  if (type === 'error') {
+    accentColor = lowStockRed;
+    confirmBg = lowStockRed;
+  } else if (type === 'info') {
+    accentColor = '#03A9F4';
+    confirmBg = primaryPurple;
+  }
+  
+  if (!onCancel) {
+    confirmBg = accentColor;
+  }
+
+  if (!isVisible) return null;
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={isVisible}
+      onRequestClose={onCancel || onConfirm}
+    >
+      <Pressable style={alertStyles.centeredView} onPress={onCancel || onConfirm}>
+        <View style={[alertStyles.modalView, { borderTopColor: accentColor }]}>
+          <Text style={[alertStyles.modalTitle, { color: accentColor }]}>{title}</Text>
+          <Text style={alertStyles.modalMessage}>{message}</Text>
+
+          <View style={alertStyles.buttonContainer}>
+            {onCancel && (
+              <TouchableOpacity
+                style={[alertStyles.button, { backgroundColor: cancelBg }]}
+                onPress={onCancel}
+                activeOpacity={0.8}
+              >
+                <Text style={[alertStyles.textStyle, { color: cancelTextColor }]}>
+                  {cancelText || 'CANCELAR'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[
+                onCancel ? alertStyles.button : alertStyles.singleButton, 
+                { backgroundColor: confirmBg }
+              ]}
+              onPress={onConfirm}
+              activeOpacity={0.8}
+            >
+              <Text style={[alertStyles.textStyle, { color: textLight }]}>
+                {confirmText}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+};
+// --- FIN COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
+
 // Componente separado para mostrar cada campo de datos
-const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", isEditable = false, isEditing, onChangeText, error, keyboardType = "default", maxLength }) => {
+const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", isEditable = false, isEditing, onChangeText, error, keyboardType = "default", maxLength, prefix }) => {
   const IconComponent = iconType === "MaterialIcons" ? MaterialIcons : FontAwesome;
   
   return (
@@ -28,15 +112,37 @@ const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", is
       
       {isEditable && isEditing ? (
         <View style={styles.inputContainer}>
-          <TextInput
-            style={[styles.editInput, error ? styles.inputError : null]}
-            value={value}
-            onChangeText={onChangeText}
-            placeholder={`Ingresa tu ${label.toLowerCase()}`}
-            keyboardType={keyboardType}
-            autoCapitalize={keyboardType === "default" ? "words" : "none"}
-            blurOnSubmit={false}
-          />
+          {prefix ? (
+            <View style={styles.inputWithPrefix}>
+              <Text style={styles.prefixText}>{prefix}</Text>
+              <TextInput
+                style={[
+                  styles.editInput, 
+                  error ? styles.inputError : null,
+                  styles.inputWithPrefixText
+                ]}
+                value={value}
+                onChangeText={onChangeText}
+                placeholder="1112345678"
+                keyboardType={keyboardType}
+                autoCapitalize={keyboardType === "default" ? "words" : "none"}
+                blurOnSubmit={false}
+              />
+            </View>
+          ) : (
+            <TextInput
+              style={[
+                styles.editInput, 
+                error ? styles.inputError : null
+              ]}
+              value={value}
+              onChangeText={onChangeText}
+              placeholder={`Ingresa tu ${label.toLowerCase()}`}
+              keyboardType={keyboardType}
+              autoCapitalize={keyboardType === "default" ? "words" : "none"}
+              blurOnSubmit={false}
+            />
+          )}
           {maxLength && (
             <Text style={styles.characterCounter}>
               {value ? value.length : 0}/{maxLength}
@@ -47,7 +153,9 @@ const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", is
       ) : (
         <View style={styles.valueContainer}>
           <Text style={[styles.fieldValue, !isEditable && styles.readOnlyValue]}>
-            {value || 'No especificado'}
+            {prefix && value ? 
+              (value.startsWith(prefix) ? value : `${prefix} ${value}`) : 
+              value || 'No especificado'}
           </Text>
           {!isEditable && (
             <View style={styles.readOnlyBadge}>
@@ -89,8 +197,54 @@ export default function EditarPerfilScreen({ navigation }) {
     phone: ''
   });
 
-  // Estado para debounce de validación DNI
-  const [dniValidationTimeout, setDniValidationTimeout] = useState(null);
+  // ESTADO para controlar el modal de alerta/confirmación
+  const [customAlertData, setCustomAlertData] = useState({
+    isVisible: false,
+    title: '',
+    message: '',
+    onConfirm: () => setCustomAlertData(prev => ({ ...prev, isVisible: false })),
+    onCancel: null,
+    confirmText: 'ACEPTAR',
+    type: 'default',
+  });
+  
+  // Función centralizada para mostrar el CustomAlertModal
+  const showCustomAlert = (title, message, onConfirm, onCancel = null, confirmText = 'ACEPTAR', type = 'default') => {
+    setCustomAlertData({
+      isVisible: true,
+      title,
+      message,
+      onConfirm,
+      onCancel,
+      confirmText,
+      type,
+    });
+  };
+
+  // Referencias para debounce de validación (evitar re-renders)
+  const dniValidationTimeout = useRef(null);
+  const phoneValidationTimeout = useRef(null);
+  
+  // Referencia para el ScrollView
+  const scrollViewRef = useRef(null);
+
+  // Función helper para inicializar campos de edición
+  const initializeEditFields = useCallback((data) => {
+    setEditFirstName(data.firstName || '');
+    setEditLastName(data.lastName || '');
+    setEditDni(data.dni || '');
+    setEditPhone(data.phone ? data.phone.replace(/^\+54\s?/, '') : '');
+  }, []);
+
+  // Función helper para limpiar errores
+  const clearErrors = useCallback(() => {
+    setErrors({
+      firstName: '',
+      lastName: '',
+      dni: '',
+      phone: ''
+    });
+  }, []);
 
   // Función para obtener datos del usuario
   const fetchUserData = async (user) => {
@@ -130,18 +284,12 @@ export default function EditarPerfilScreen({ navigation }) {
           setUserData(userData);
           
           // Inicializar campos de edición
-          setEditFirstName(userData.firstName);
-          setEditLastName(userData.lastName);
-          setEditDni(userData.dni);
-          setEditPhone(userData.phone);
+          initializeEditFields(userData);
           
         } else {
           // Si no existe documento en Firestore, usar datos básicos
           setUserData(basicData);
-          setEditFirstName(basicData.firstName);
-          setEditLastName(basicData.lastName);
-          setEditDni(basicData.dni);
-          setEditPhone(basicData.phone);
+          initializeEditFields(basicData);
         }
       } catch (firestoreError) {
         console.log('Error accediendo a Firestore:', firestoreError);
@@ -159,10 +307,7 @@ export default function EditarPerfilScreen({ navigation }) {
         
         // Usar datos básicos en caso de error
         setUserData(basicData);
-        setEditFirstName(basicData.firstName);
-        setEditLastName(basicData.lastName);
-        setEditDni(basicData.dni);
-        setEditPhone(basicData.phone);
+        initializeEditFields(basicData);
       }
       
     } catch (error) {
@@ -199,6 +344,38 @@ export default function EditarPerfilScreen({ navigation }) {
       return true;
     } catch (error) {
       console.error('Error verificando unicidad del DNI:', error);
+      // En caso de error, permitir continuar (no bloquear por error de red)
+      return true;
+    }
+  };
+
+  // Función para verificar unicidad del teléfono
+  const checkPhoneUniqueness = async (phone) => {
+    try {
+      // No verificar si el teléfono está vacío
+      if (!phone.trim()) return true;
+      
+      // Normalizar teléfono para comparación (sin espacios, guiones, paréntesis)
+      const normalizedPhone = phone.replace(/[\s\-\(\)]/g, '');
+      
+      // Crear consulta para buscar usuarios con el mismo teléfono
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('phone', '==', phone.trim()));
+      const querySnapshot = await getDocs(q);
+      
+      // Si encontramos documentos, verificar que no sea el usuario actual
+      if (!querySnapshot.empty) {
+        for (const doc of querySnapshot.docs) {
+          // Si el teléfono pertenece a otro usuario (no al actual), es duplicado
+          if (doc.id !== currentUserId) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error verificando unicidad del teléfono:', error);
       // En caso de error, permitir continuar (no bloquear por error de red)
       return true;
     }
@@ -242,14 +419,22 @@ export default function EditarPerfilScreen({ navigation }) {
       newErrors.lastName = 'El apellido solo puede contener letras';
     }
 
-    // Validar DNI (solo verificar si ya hay un error mostrado en tiempo real)
-    if (editDni.trim() && !errors.dni) {
-      // Si no hay error en tiempo real pero hay DNI, hacer una validación final
+    // Validar DNI - SIEMPRE validar si hay DNI
+    if (editDni.trim()) {
       const dniValue = editDni.trim();
+      const dniNumber = parseInt(dniValue, 10);
       
       // Validar formato básico (7-8 dígitos)
       if (!/^\d{7,8}$/.test(dniValue)) {
         newErrors.dni = 'DNI inválido. Debe contener entre 7 y 8 números (ej: 12345678)';
+      }
+      // Validar rangos realistas
+      else if (dniNumber < 1000000) {
+        newErrors.dni = 'DNI muy bajo. Los DNI actuales comienzan desde 1.000.000';
+      } else if (dniNumber > 99999999) {
+        newErrors.dni = 'DNI muy alto. Los DNI actuales no superan 99.999.999';
+      } else if (dniNumber > 60000000) {
+        newErrors.dni = 'DNI muy alto para la época actual. Verifique el número ingresado';
       }
       // Validar que no sean todos números iguales
       else if (/^(\d)\1+$/.test(dniValue)) {
@@ -259,21 +444,39 @@ export default function EditarPerfilScreen({ navigation }) {
       else if (/^(01234567|12345678|23456789|87654321|76543210|65432109|54321098|43210987|32109876|21098765|10987654)$/.test(dniValue)) {
         newErrors.dni = 'DNI inválido. No puede ser una secuencia consecutiva';
       }
-      // Validar unicidad del DNI
+      // Validar unicidad del DNI (solo si pasó todas las demás validaciones)
       else {
         const isUnique = await checkDniUniqueness(dniValue);
         if (!isUnique) {
           newErrors.dni = 'Este DNI ya está registrado por otro usuario';
         }
       }
-    } else if (errors.dni) {
-      // Si ya hay un error en tiempo real, conservarlo
-      newErrors.dni = errors.dni;
     }
 
-    // Validar teléfono (errores en campo como antes)
-    if (editPhone.trim() && !/^[\+]?[0-9\s\-\(\)]{8,15}$/.test(editPhone.trim())) {
-      newErrors.phone = 'Formato de teléfono inválido (8-15 dígitos)';
+    // Validar teléfono - SIEMPRE validar si hay teléfono
+    if (editPhone.trim()) {
+      const phoneValue = editPhone.trim();
+      
+      // Validar formato nacional argentino (solo números)
+      if (!/^[0-9]{8,12}$/.test(phoneValue)) {
+        newErrors.phone = 'Formato inválido (ej: 1112345678)';
+      }
+      // Validar números consecutivos o repetitivos
+      else if (/^(\d)\1+$/.test(phoneValue)) {
+        newErrors.phone = 'Teléfono inválido. No puede contener todos los dígitos iguales';
+      }
+      // Validar secuencias consecutivas simples
+      else if (/^(01234567|12345678|23456789|34567890|87654321|76543210|65432109|54321098|43210987|32109876|21098765|10987654)/.test(phoneValue)) {
+        newErrors.phone = 'Teléfono inválido. No puede ser una secuencia consecutiva';
+      }
+      // Validar unicidad del teléfono (solo si pasó todas las demás validaciones)
+      else {
+        const fullPhoneNumber = `+54 ${phoneValue}`;
+        const isUnique = await checkPhoneUniqueness(fullPhoneNumber);
+        if (!isUnique) {
+          newErrors.phone = 'Este teléfono ya está registrado por otro usuario';
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -282,70 +485,82 @@ export default function EditarPerfilScreen({ navigation }) {
 
   // Función para guardar los cambios
   const handleSaveChanges = async () => {
-    // Mostrar alerta de confirmación antes de guardar
-    Alert.alert(
+    // Mostrar alerta de confirmación antes de guardar usando CustomAlertModal
+    const onConfirm = async () => {
+      setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+      
+      // Proceder con la validación y guardado
+      if (!(await validateData())) {
+        return;
+      }
+
+      if (!currentUserId) {
+        showCustomAlert(
+          'Error',
+          'No se pudo identificar al usuario',
+          () => setCustomAlertData(prev => ({ ...prev, isVisible: false })),
+          null,
+          'ENTENDIDO',
+          'error'
+        );
+        return;
+      }
+
+      try {
+        // Preparar datos actualizados
+        const updatedData = {
+          firstName: editFirstName.trim(),
+          lastName: editLastName.trim(),
+          dni: editDni.trim(),
+          phone: editPhone.trim() ? 
+            (editPhone.trim().startsWith('+54') ? editPhone.trim() : `+54 ${editPhone.trim()}`) : '', // Evitar duplicar +54
+          fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
+          updatedAt: new Date().toISOString()
+        };
+
+        // Actualizar en Firestore
+        await updateDoc(doc(db, 'users', currentUserId), updatedData);
+
+        // Actualizar estado local
+        setUserData(prev => ({
+          ...prev,
+          ...updatedData
+        }));
+
+        // Salir del modo edición
+        setIsEditing(false);
+
+        Toast.show({
+          type: 'success',
+          text1: 'Perfil actualizado',
+          text2: 'Los cambios se guardaron correctamente',
+          visibilityTime: 3000,
+        });
+
+      } catch (error) {
+        console.error('Error guardando datos:', error);
+        showCustomAlert(
+          'Error',
+          'No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.',
+          () => setCustomAlertData(prev => ({ ...prev, isVisible: false })),
+          null,
+          'ENTENDIDO',
+          'error'
+        );
+      }
+    };
+
+    const onCancel = () => {
+      setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+    };
+
+    showCustomAlert(
       'Confirmar cambios',
       '¿Estás seguro de que quieres guardar los cambios en tu perfil?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Guardar',
-          style: 'default',
-          onPress: async () => {
-            // Proceder con la validación y guardado
-            if (!(await validateData())) {
-              return;
-            }
-
-            if (!currentUserId) {
-              Alert.alert('Error', 'No se pudo identificar al usuario');
-              return;
-            }
-
-            try {
-              // Preparar datos actualizados
-              const updatedData = {
-                firstName: editFirstName.trim(),
-                lastName: editLastName.trim(),
-                dni: editDni.trim(),
-                phone: editPhone.trim(),
-                fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
-                updatedAt: new Date().toISOString()
-              };
-
-              // Actualizar en Firestore
-              await updateDoc(doc(db, 'users', currentUserId), updatedData);
-
-              // Actualizar estado local
-              setUserData(prev => ({
-                ...prev,
-                ...updatedData
-              }));
-
-              // Salir del modo edición
-              setIsEditing(false);
-
-              Toast.show({
-                type: 'success',
-                text1: 'Perfil actualizado',
-                text2: 'Los cambios se guardaron correctamente',
-                visibilityTime: 3000,
-              });
-
-            } catch (error) {
-              console.error('Error guardando datos:', error);
-              Alert.alert(
-                'Error',
-                'No se pudieron guardar los cambios. Por favor, inténtalo de nuevo.',
-                [{ text: 'Entendido' }]
-              );
-            }
-          },
-        },
-      ]
+      onConfirm,
+      onCancel,
+      'GUARDAR',
+      'default'
     );
   };
 
@@ -353,53 +568,37 @@ export default function EditarPerfilScreen({ navigation }) {
   const handleCancelEdit = () => {
     // Verificar si hay cambios sin guardar
     if (hasChanges()) {
-      Alert.alert(
+      const onConfirm = () => {
+        setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+        // Restaurar valores originales
+        initializeEditFields(userData);
+        
+        // Limpiar errores
+        clearErrors();
+        
+        // Salir del modo edición
+        setIsEditing(false);
+      };
+
+      const onCancel = () => {
+        setCustomAlertData(prev => ({ ...prev, isVisible: false }));
+      };
+
+      showCustomAlert(
         'Descartar cambios',
         '¿Estás seguro de que quieres descartar los cambios realizados?',
-        [
-          {
-            text: 'Continuar editando',
-            style: 'cancel',
-          },
-          {
-            text: 'Descartar',
-            style: 'destructive',
-            onPress: () => {
-              // Restaurar valores originales
-              setEditFirstName(userData.firstName);
-              setEditLastName(userData.lastName);
-              setEditDni(userData.dni);
-              setEditPhone(userData.phone);
-              
-              // Limpiar errores
-              setErrors({
-                firstName: '',
-                lastName: '',
-                dni: '',
-                phone: ''
-              });
-              
-              // Salir del modo edición
-              setIsEditing(false);
-            },
-          },
-        ]
+        onConfirm,
+        onCancel,
+        'DESCARTAR',
+        'error'
       );
     } else {
       // Si no hay cambios, cancelar directamente
       // Restaurar valores originales
-      setEditFirstName(userData.firstName);
-      setEditLastName(userData.lastName);
-      setEditDni(userData.dni);
-      setEditPhone(userData.phone);
+      initializeEditFields(userData);
       
       // Limpiar errores
-      setErrors({
-        firstName: '',
-        lastName: '',
-        dni: '',
-        phone: ''
-      });
+      clearErrors();
       
       // Salir del modo edición
       setIsEditing(false);
@@ -449,8 +648,8 @@ export default function EditarPerfilScreen({ navigation }) {
     setEditDni(filteredText);
     
     // Limpiar timeout anterior
-    if (dniValidationTimeout) {
-      clearTimeout(dniValidationTimeout);
+    if (dniValidationTimeout.current) {
+      clearTimeout(dniValidationTimeout.current);
     }
     
     // Validación inmediata de formato
@@ -458,6 +657,7 @@ export default function EditarPerfilScreen({ navigation }) {
     
     if (filteredText.trim()) {
       const dniValue = filteredText.trim();
+      const dniNumber = parseInt(dniValue, 10);
       
       // Validar formato básico (7-8 dígitos)
       if (dniValue.length > 0 && dniValue.length < 7) {
@@ -467,13 +667,23 @@ export default function EditarPerfilScreen({ navigation }) {
       } else if (dniValue.length >= 7 && !/^\d{7,8}$/.test(dniValue)) {
         dniError = 'DNI inválido. Debe contener entre 7 y 8 números (ej: 12345678)';
       }
-      // Validar que no sean todos números iguales
+      // Validar que no sean todos números iguales (independiente de otras validaciones)
       else if (dniValue.length >= 7 && /^(\d)\1+$/.test(dniValue)) {
         dniError = 'DNI inválido. No puede contener todos los dígitos iguales';
       }
-      // Validar que no sean números consecutivos simples
+      // Validar que no sean números consecutivos simples (independiente de otras validaciones)
       else if (dniValue.length >= 7 && /^(01234567|12345678|23456789|87654321|76543210|65432109|54321098|43210987|32109876|21098765|10987654)$/.test(dniValue)) {
         dniError = 'DNI inválido. No puede ser una secuencia consecutiva';
+      }
+      // Validar rangos realistas de DNI argentinos (solo si pasó las validaciones anteriores)
+      else if (dniValue.length >= 7) {
+        if (dniNumber < 1000000) {
+          dniError = 'DNI muy bajo. Los DNI actuales comienzan desde 1.000.000';
+        } else if (dniNumber > 99999999) {
+          dniError = 'DNI muy alto. Los DNI actuales no superan 99.999.999';
+        } else if (dniNumber > 60000000) {
+          dniError = 'DNI muy alto para la época actual. Verifique el número ingresado';
+        }
       }
     }
     
@@ -499,13 +709,76 @@ export default function EditarPerfilScreen({ navigation }) {
         }
       }, 1000); // Esperar 1 segundo después de que el usuario deje de escribir
       
-      setDniValidationTimeout(timeout);
+      dniValidationTimeout.current = timeout;
     }
-  }, [currentUserId, dniValidationTimeout]);
+  }, [currentUserId]);
 
   const handlePhoneChange = useCallback((text) => {
-    setEditPhone(text);
-  }, []);
+    // Filtrar solo números
+    const filteredText = text.replace(/[^0-9]/g, '');
+    setEditPhone(filteredText);
+    
+    // Limpiar timeout anterior
+    if (phoneValidationTimeout.current) {
+      clearTimeout(phoneValidationTimeout.current);
+    }
+    
+    // Validación inmediata de formato para números nacionales
+    let phoneError = '';
+    
+    if (filteredText.trim()) {
+      const phoneValue = filteredText.trim();
+      
+      // Validar longitud (números nacionales argentinos: 8-12 dígitos)
+      if (phoneValue.length > 0 && phoneValue.length < 8) {
+        phoneError = 'Teléfono debe tener al menos 8 dígitos';
+      } else if (phoneValue.length > 12) {
+        phoneError = 'Teléfono no puede tener más de 12 dígitos';
+      }
+      // Validar formato nacional argentino (solo números)
+      else if (phoneValue.length >= 8 && !/^[0-9]{8,12}$/.test(phoneValue)) {
+        phoneError = 'Formato inválido (ej: 1112345678)';
+      }
+      // Validar números consecutivos o repetitivos
+      else if (phoneValue.length >= 8) {
+        // Validar que no sean todos números iguales
+        if (/^(\d)\1+$/.test(phoneValue)) {
+          phoneError = 'Teléfono inválido. No puede contener todos los dígitos iguales';
+        }
+        // Validar secuencias consecutivas simples
+        else if (/^(01234567|12345678|23456789|34567890|87654321|76543210|65432109|54321098|43210987|32109876|21098765|10987654)/.test(phoneValue)) {
+          phoneError = 'Teléfono inválido. No puede ser una secuencia consecutiva';
+        }
+      }
+    }
+    
+    // Actualizar error inmediatamente para validaciones de formato
+    setErrors(prev => ({
+      ...prev,
+      phone: phoneError
+    }));
+    
+    // Validación de unicidad con debounce (solo si formato es válido)
+    if (!phoneError && filteredText.length >= 8 && filteredText.length <= 12) {
+      const timeout = setTimeout(async () => {
+        try {
+          // Crear número completo con +54 para verificar unicidad
+          const fullPhoneNumber = `+54 ${filteredText}`;
+          const isUnique = await checkPhoneUniqueness(fullPhoneNumber);
+          if (!isUnique) {
+            setErrors(prev => ({
+              ...prev,
+              phone: 'Este teléfono ya está registrado por otro usuario'
+            }));
+          }
+        } catch (error) {
+          console.log('Error verificando unicidad del teléfono en tiempo real:', error);
+        }
+      }, 1000); // Esperar 1 segundo después de que el usuario deje de escribir
+      
+      phoneValidationTimeout.current = timeout;
+    }
+  }, [currentUserId]);
 
   // useEffect para obtener datos del usuario autenticado
   useEffect(() => {
@@ -520,19 +793,37 @@ export default function EditarPerfilScreen({ navigation }) {
     // Cleanup function
     return () => {
       unsubscribe();
-      // Limpiar timeout si existe
-      if (dniValidationTimeout) {
-        clearTimeout(dniValidationTimeout);
+      // Limpiar timeouts si existen
+      if (dniValidationTimeout.current) {
+        clearTimeout(dniValidationTimeout.current);
+      }
+      if (phoneValidationTimeout.current) {
+        clearTimeout(phoneValidationTimeout.current);
       }
     };
-  }, [dniValidationTimeout]);
+  }, [dniValidationTimeout, phoneValidationTimeout]);
+
+  // useEffect para hacer scroll hacia arriba cuando se inicia la edición
+  useEffect(() => {
+    if (isEditing && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      }, 100);
+    }
+  }, [isEditing]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView 
+        ref={scrollViewRef}
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
+        bounces={true}
+        alwaysBounceVertical={true}
+        contentInsetAdjustmentBehavior="automatic"
       >
         
         {/* Indicador de conexión */}
@@ -587,6 +878,7 @@ export default function EditarPerfilScreen({ navigation }) {
             error={errors.phone}
             keyboardType="phone-pad"
             iconType="FontAwesome"
+            prefix="+54"
           />
           
           <DataField
@@ -668,10 +960,22 @@ export default function EditarPerfilScreen({ navigation }) {
           </View>
         )}
 
-        {/* Espaciado inferior */}
-        <View style={{ height: 40 }} />
+        {/* Espaciado inferior para mejor scroll */}
+        <View style={{ height: 120 }} />
         
       </ScrollView>
+      
+      {/* --- MODAL DE ALERTA/CONFIRMACIÓN PERSONALIZADO --- */}
+      <CustomAlertModal
+        isVisible={customAlertData.isVisible}
+        title={customAlertData.title}
+        message={customAlertData.message}
+        onConfirm={customAlertData.onConfirm}
+        onCancel={customAlertData.onCancel}
+        confirmText={customAlertData.confirmText}
+        type={customAlertData.type}
+      />
+      
       <Toast />
     </SafeAreaView>
   );
@@ -686,7 +990,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120,
+    paddingTop: 10,
   },
   
   // Offline indicator
@@ -782,6 +1087,27 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginLeft: 30,
   },
+  inputWithPrefix: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  prefixText: {
+    fontSize: 16,
+    color: '#8F08AA',
+    fontWeight: '600',
+    paddingLeft: 12,
+    paddingRight: 8,
+    backgroundColor: '#f8f8f8',
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    paddingVertical: 10,
+    borderRightWidth: 1,
+    borderRightColor: '#ddd',
+  },
   editInput: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -791,6 +1117,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fff',
     color: '#333',
+  },
+  inputWithPrefixText: {
+    borderWidth: 0,
+    borderRadius: 0,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    flex: 1,
   },
   inputError: {
     borderColor: '#B50000',
@@ -940,5 +1273,66 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#8F08AA',
     marginLeft: 8,
+  },
+});
+
+// --- ESTILOS DEL MODAL DE ALERTA PERSONALIZADO ---
+const alertStyles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  modalView: {
+    width: '85%',
+    margin: 20,
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
+    borderTopWidth: 5,
+    borderTopColor: COLORS.primaryPurple, // Acento dinámico
+  },
+  modalTitle: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.primaryPurple,
+  },
+  modalMessage: {
+    marginBottom: 25,
+    textAlign: 'center',
+    fontSize: 16,
+    color: COLORS.textDark,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    borderRadius: 12,
+    padding: 12,
+    elevation: 2,
+    width: '48%',
+  },
+  singleButton: {
+    borderRadius: 12,
+    padding: 12,
+    elevation: 2,
+    width: '100%',
+  },
+  textStyle: {
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fontSize: 16,
   },
 });
