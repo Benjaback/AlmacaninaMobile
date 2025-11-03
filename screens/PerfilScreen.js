@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Pressable,
     ImageBackground,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -171,6 +172,11 @@ export default function PantallaPerfil({ navigation }) {
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [changeLoading, setChangeLoading] = useState(false);
+    const [passwordLength, setPasswordLength] = useState(false);
+    const [hasUppercase, setHasUppercase] = useState(false);
+    const [hasLowercase, setHasLowercase] = useState(false);
+    const [hasNumber, setHasNumber] = useState(false);
+    const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
     
     // ESTADO PARA EL MODAL DE ACCIONES DE IMAGEN (NUEVO)
     const [isImageActionModalVisible, setIsImageActionModalVisible] = useState(false);
@@ -450,6 +456,68 @@ export default function PantallaPerfil({ navigation }) {
         };
     }, []);
 
+    // Validación en tiempo real de la nueva contraseña
+    const validatePassword = (text) => {
+        setPasswordLength(text.length >= 6);
+        setHasUppercase(/[A-Z]/.test(text));
+        setHasLowercase(/[a-z]/.test(text));
+        setHasNumber(/\d/.test(text));
+    };
+
+    // Guardar nueva contraseña: reautenticar y actualizar
+    const handleSavePassword = async () => {
+        const user = auth.currentUser;
+        if (!user) {
+            Toast.show({ type: 'error', text1: 'Error', text2: 'No se encontró el usuario.' });
+            return;
+        }
+
+        const allRequirements = passwordLength && hasUppercase && hasLowercase && hasNumber;
+        if (!allRequirements) {
+            Toast.show({ type: 'error', text1: 'Requisitos incompletos', text2: 'Verifica los requisitos de la nueva contraseña.' });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            Toast.show({ type: 'error', text1: 'Coincidencia incorrecta', text2: 'Las contraseñas no coinciden.' });
+            return;
+        }
+
+        if (!currentPassword || currentPassword.trim() === '') {
+            Toast.show({ type: 'error', text1: 'Contraseña actual', text2: 'Ingresa tu contraseña actual para verificar.' });
+            return;
+        }
+
+        setChangeLoading(true);
+        try {
+            const credential = EmailAuthProvider.credential(userEmail, currentPassword);
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, newPassword);
+
+            Toast.show({ type: 'success', text1: 'Contraseña actualizada', text2: 'Tu contraseña se actualizó correctamente.' });
+            // limpiar y cerrar modal
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setShowPasswordRequirements(false);
+            setModalVisible(false);
+        } catch (error) {
+            console.error('Error updating password:', error);
+            const code = error.code || '';
+            if (code.includes('wrong-password')) {
+                Toast.show({ type: 'error', text1: 'Contraseña incorrecta', text2: 'La contraseña actual ingresada es incorrecta.' });
+            } else if (code.includes('weak-password')) {
+                Toast.show({ type: 'error', text1: 'Contraseña débil', text2: 'La contraseña nueva es demasiado débil.' });
+            } else if (code.includes('requires-recent-login')) {
+                Toast.show({ type: 'error', text1: 'Reautenticación requerida', text2: 'Vuelve a iniciar sesión e intenta de nuevo.' });
+            } else {
+                Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo actualizar la contraseña. Intenta nuevamente.' });
+            }
+        } finally {
+            setChangeLoading(false);
+        }
+    };
+
     // esto sirve para los iconos (sin cambios)
     const MenuItem = ({ icon, title, subtitle, onPress, iconType = "FontAwesome" }) => {
         const IconComponent = iconType === "MaterialIcons" ? MaterialIcons : 
@@ -575,8 +643,9 @@ export default function PantallaPerfil({ navigation }) {
                                 keyboardShouldPersistTaps="handled"
                                 enableOnAndroid={true}
                                 enableAutomaticScroll={true}
-                                extraHeight={120}
-                                extraScrollHeight={120}
+                                extraHeight={20}
+                                extraScrollHeight={10}
+                                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                                 resetScrollToCoords={{ x: 0, y: 0 }}
                                 showsVerticalScrollIndicator={false}
                             >
@@ -594,7 +663,7 @@ export default function PantallaPerfil({ navigation }) {
                                         editable={!changeLoading}
                                     />
                                     <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)} style={styles.showBtn}>
-                                        <Text style={styles.showText}>{showCurrent ? 'Ocultar' : 'Mostrar'}</Text>
+                                        <FontAwesome name={showCurrent ? 'eye-slash' : 'eye'} size={20} color="#8F08AA" />
                                     </TouchableOpacity>
                                 </View>
 
@@ -602,16 +671,42 @@ export default function PantallaPerfil({ navigation }) {
                                 <View style={styles.inputRow}>
                                     <TextInput
                                         value={newPassword}
-                                        onChangeText={setNewPassword}
+                                        onChangeText={(text) => {
+                                            setNewPassword(text);
+                                            validatePassword(text);
+                                        }}
                                         placeholder="Nueva contraseña"
                                         secureTextEntry={!showNew}
                                         style={styles.inputField}
                                         editable={!changeLoading}
+                                        onFocus={() => setShowPasswordRequirements(true)}
+                                        onBlur={() => setShowPasswordRequirements(false)}
                                     />
                                     <TouchableOpacity onPress={() => setShowNew(!showNew)} style={styles.showBtn}>
-                                        <Text style={styles.showText}>{showNew ? 'Ocultar' : 'Mostrar'}</Text>
+                                        <FontAwesome name={showNew ? 'eye-slash' : 'eye'} size={20} color="#8F08AA" />
                                     </TouchableOpacity>
                                 </View>
+
+                                {showPasswordRequirements && (
+                                    <View style={styles.passwordRequirements}>
+                                        <View style={styles.requirementItem}>
+                                            <FontAwesome name={passwordLength ? 'check-circle' : 'circle'} size={16} color={passwordLength ? '#4CAF50' : '#ccc'} />
+                                            <Text style={[styles.requirementText, passwordLength && styles.requirementMet]}>Al menos 6 caracteres</Text>
+                                        </View>
+                                        <View style={styles.requirementItem}>
+                                            <FontAwesome name={hasUppercase ? 'check-circle' : 'circle'} size={16} color={hasUppercase ? '#4CAF50' : '#ccc'} />
+                                            <Text style={[styles.requirementText, hasUppercase && styles.requirementMet]}>Una letra mayúscula</Text>
+                                        </View>
+                                        <View style={styles.requirementItem}>
+                                            <FontAwesome name={hasLowercase ? 'check-circle' : 'circle'} size={16} color={hasLowercase ? '#4CAF50' : '#ccc'} />
+                                            <Text style={[styles.requirementText, hasLowercase && styles.requirementMet]}>Una letra minúscula</Text>
+                                        </View>
+                                        <View style={styles.requirementItem}>
+                                            <FontAwesome name={hasNumber ? 'check-circle' : 'circle'} size={16} color={hasNumber ? '#4CAF50' : '#ccc'} />
+                                            <Text style={[styles.requirementText, hasNumber && styles.requirementMet]}>Un número</Text>
+                                        </View>
+                                    </View>
+                                )}
 
                                     <Text style={styles.inputLabel}>Confirmar nueva contraseña</Text>
                                     <View style={styles.inputRow}>
@@ -624,9 +719,16 @@ export default function PantallaPerfil({ navigation }) {
                                             editable={!changeLoading}
                                         />
                                         <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.showBtn}>
-                                            <Text style={styles.showText}>{showConfirm ? 'Ocultar' : 'Mostrar'}</Text>
+                                            <FontAwesome name={showConfirm ? 'eye-slash' : 'eye'} size={20} color="#8F08AA" />
                                         </TouchableOpacity>
                                     </View>
+
+                                    {/* Indicador de coincidencia */}
+                                    {confirmPassword.length > 0 && (
+                                        <Text style={{ fontSize: 13, color: newPassword === confirmPassword ? '#4CAF50' : '#D32F2F', marginBottom: 6 }}>
+                                            {newPassword === confirmPassword ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}
+                                        </Text>
+                                    )}
 
                                 <View style={styles.modalButtons}>
                                     <TouchableOpacity
@@ -639,10 +741,8 @@ export default function PantallaPerfil({ navigation }) {
 
                                     <TouchableOpacity
                                         style={[styles.modalButton, styles.modalButtonPrimary]}
-                                        onPress={async () => {
-                                            // Lógica de cambio de contraseña
-                                        }}
-                                        disabled={changeLoading}
+                                        onPress={handleSavePassword}
+                                        disabled={changeLoading || !(passwordLength && hasUppercase && hasLowercase && hasNumber && newPassword === confirmPassword)}
                                     >
                                         {changeLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalButtonText}>Guardar</Text>}
                                     </TouchableOpacity>
@@ -1132,4 +1232,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: 'rgba(255, 255, 255, 0',
       },
+            passwordRequirements: {
+                marginTop: 6,
+                marginBottom: 6,
+                paddingVertical: 6,
+            },
+            requirementItem: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 6,
+            },
+            requirementText: {
+                marginLeft: 8,
+                fontSize: 13,
+                color: '#666',
+            },
+            requirementMet: {
+                color: '#4CAF50',
+            },
 });
