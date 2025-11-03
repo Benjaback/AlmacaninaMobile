@@ -370,14 +370,15 @@ export default function CrearProductoScreen({ navigation }) {
                     keyboardType="numeric"
                     value={price}
                     onChangeText={(text) => {
-                        const numericValue = parseFloat(text);
-                        if (numericValue < 0) {
-                          setPriceError('El precio no puede ser negativo');
-                        } else {
-                          setPriceError('');
-                          setPrice(text);
-                          checkFormValidity({ price: text });
-                        }
+                        // Filtrar signos negativos y solo permitir números y punto decimal
+                        const filteredText = text.replace(/[^0-9.]/g, '');
+                        
+                        // Permitir solo un punto decimal
+                        const parts = filteredText.split('.');
+                        const cleanText = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filteredText;
+                        
+                        setPrice(cleanText);
+                        checkFormValidity({ price: cleanText });
                       }}
                         maxLength={10}
                 />

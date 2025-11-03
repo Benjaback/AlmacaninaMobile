@@ -11,6 +11,7 @@ import {
     TextInput,
     ActivityIndicator,
     Pressable,
+    ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
@@ -472,35 +473,41 @@ export default function PantallaPerfil({ navigation }) {
             <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
                 
                 {/* Header con foto de perfil */}
-                <View style={styles.header}>
-                    <TouchableOpacity 
-                        style={styles.avatarContainer}
-                        onPress={handleImagePicker} // AHORA llama al Modal de Acciones
-                        onLongPress={() => {
-                            if (userImage) {
-                                setImageModalVisible(true);
-                            }
-                        }}
-                        delayLongPress={500}
-                    >
-                        <View style={styles.avatar}>
-                            {userImage ? (
-                                <Image 
-                                    source={{ uri: userImage }} 
-                                    style={styles.avatarImage}
-                                />
-                            ) : (
-                                <Text style={styles.avatarText}>{userInitials}</Text>
-                            )}
-                        </View>
-                        <View style={styles.cameraIcon}>
-                            <FontAwesome name="camera" size={12} color="#fff" />
-                        </View>
-                    </TouchableOpacity>
-                    
-                    <Text style={styles.userName}>{userName || 'Mi Perfil'}</Text>
-                    <Text style={styles.userEmail}>{userEmail}</Text>
-                </View>
+                <ImageBackground 
+                    source={require('../assets/fondoperfil.jpg')}
+                    style={styles.header}
+                    resizeMode="cover"
+                >
+                    <View style={styles.headerOverlay}>
+                        <TouchableOpacity 
+                            style={styles.avatarContainer}
+                            onPress={handleImagePicker} // AHORA llama al Modal de Acciones
+                            onLongPress={() => {
+                                if (userImage) {
+                                    setImageModalVisible(true);
+                                }
+                            }}
+                            delayLongPress={500}
+                        >
+                            <View style={styles.avatar}>
+                                {userImage ? (
+                                    <Image 
+                                        source={{ uri: userImage }} 
+                                        style={styles.avatarImage}
+                                    />
+                                ) : (
+                                    <Text style={styles.avatarText}>{userInitials}</Text>
+                                )}
+                            </View>
+                            <View style={styles.cameraIcon}>
+                                <FontAwesome name="camera" size={12} color="#fff" />
+                            </View>
+                        </TouchableOpacity>
+                        
+                        <Text style={styles.userName}>{userName || 'Mi Perfil'}</Text>
+                        <Text style={styles.userEmail}>{userEmail}</Text>
+                    </View>
+                </ImageBackground>
 
                 {/* Sección Mi Cuenta */}
                 <View style={styles.section}>
@@ -776,7 +783,7 @@ const imageActionStyles = StyleSheet.create({
     },
 });
 
-// --- ESTILOS DEL MODAL (alertStyles, COPIADOS DE HOME.JS Y AJUSTADOS) ---
+// --- ESTILOS DEL MODAL () ---
 const alertStyles = StyleSheet.create({
     centeredView: {
         flex: 1,
@@ -849,8 +856,7 @@ const styles = StyleSheet.create({
     },
     
       // Header styles
-    header: {
-        backgroundColor: 'gold',
+      header: {
         alignItems: 'center',
         paddingVertical: 30,
         paddingHorizontal: 20,
@@ -860,8 +866,16 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
-    },
-    avatarContainer: {
+      },
+      headerOverlay: {
+        // backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        alignItems: 'center',
+        paddingVertical: 30,
+        paddingHorizontal: 20,
+        borderRadius: 0,
+        width: '100%',
+      },
+      avatarContainer: {
         position: 'relative',
         marginBottom: 15,
     },
@@ -987,13 +1001,19 @@ const styles = StyleSheet.create({
     userName: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#fff',
         marginBottom: 5,
-    },
-    userEmail: {
+        textShadowColor: 'rgba(0, 0, 0, 0.7)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+      },
+      userEmail: {
         fontSize: 16,
-        color: '#666',
-    },
+        color: '#fff',
+        textShadowColor: 'rgba(0, 0, 0, 0.7)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+      },
     
       // Section styles
     section: {

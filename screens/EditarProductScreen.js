@@ -113,6 +113,7 @@
 
         if (!result.canceled) {
         setImageUri(result.assets[0].uri);
+        checkFormValidityAndChanges({ imageUri: result.assets[0].uri });
         }
     };
 
@@ -318,15 +319,16 @@
             keyboardType="numeric"
             value={price}
                 onChangeText={(text) => {
-                const numericValue = parseFloat(text);
-                if (numericValue < 0) {
-                    setPriceError('El precio no puede ser negativo');
-                } else {
-                    setPriceError('');
-                    setPrice(text);
-                    checkFormValidityAndChanges({ price: text });
-                }
-            }}
+                    // Filtrar signos negativos y solo permitir números y punto decimal
+                    const filteredText = text.replace(/[^0-9.]/g, '');
+                    
+                    // Permitir solo un punto decimal
+                    const parts = filteredText.split('.');
+                    const cleanText = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filteredText;
+                    
+                    setPrice(cleanText);
+                    checkFormValidityAndChanges({ price: cleanText });
+                }}
             maxLength={10}
             />
             {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
@@ -461,7 +463,10 @@
                 style={[styles.input, styles.textArea]}
                 placeholder="Ej: Bolsa de 15 kg , botella 1,5 L"
                 value={description}
-                onChangeText={setDescription}
+                onChangeText={(text) => {
+                    setDescription(text);
+                    checkFormValidityAndChanges({ description: text });
+                }}
                 multiline
                 numberOfLines={3}
             />
