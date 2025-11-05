@@ -363,7 +363,7 @@ export default function CrearProductoScreen({ navigation }) {
             {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
             {/* Precio */}
-             <Text style={styles.label}>Precio <Text style={styles.asterisk}>*</Text></Text>
+            <Text style={styles.label}>Precio <Text style={styles.asterisk}>*</Text></Text>
                   <TextInput
                     style={styles.input}
                     placeholder="$ 0"

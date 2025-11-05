@@ -275,9 +275,9 @@ export default function EditarPerfilScreen({ navigation }) {
             dni: firestoreData.dni || '',
             phone: firestoreData.phone || '',
             fullName: firestoreData.fullName || 
-                     (firestoreData.firstName && firestoreData.lastName ? 
-                      `${firestoreData.firstName} ${firestoreData.lastName}` : '') ||
-                     user.displayName || ''
+                      (firestoreData.firstName && firestoreData.lastName ? 
+                        `${firestoreData.firstName} ${firestoreData.lastName}` : '') ||
+                      user.displayName || ''
           };
           setUserData(userData);
           
