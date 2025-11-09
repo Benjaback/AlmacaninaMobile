@@ -346,19 +346,18 @@ export default function ProductScreen({ navigation, route }) {
                             <Text style={styles.productName}>{item.name}</Text>
 
                             {/* Price */}
-                            <Text style={styles.productPrice}>${item.price}</Text>
-
-                            {/* Stock */}
-                            <Text style={styles.productStock}>
-                                ($ {(item.stock * 1000).toLocaleString()} x Kg)
+                            <Text style={styles.productPrice}> 
+                                 
+                                    Precio: ${item.price}
+                                
                             </Text>
 
-                            {/* Availability */}
+                            {/* Stock */}
                             <Text style={[
                                 styles.productAvailability,
                                 item.stock <= 5 && styles.lowStockText
                             ]}>
-                                Disponibilidad: {item.stock}
+                                Stock: {item.stock}
                             </Text>
 
                             {/* Status Button */}
@@ -716,10 +715,15 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 4,
     },
+    productonombreprecio: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#000',
+    },
     productPrice: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#000',
+        color: '#127f19be',
         marginBottom: 2,
     },
     productStock: {

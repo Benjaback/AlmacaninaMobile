@@ -386,7 +386,7 @@ export default function EditarProductoScreen({ route, navigation }) {
                 >
                     <FontAwesome5 name="dog" size={18} color={category === 'Canes' ? '#9C27B0' : '#666'} />
                     <Text style={[styles.categoryOptionText, category === 'Canes' && styles.categoryOptionTextSelected]}>
-                    Perros
+                    CANES
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -399,20 +399,20 @@ export default function EditarProductoScreen({ route, navigation }) {
                 >
                     <FontAwesome5 name="cat" size={18} color={category === 'Felinos' ? '#9C27B0' : '#666'} />
                     <Text style={[styles.categoryOptionText, category === 'Felinos' && styles.categoryOptionTextSelected]}>
-                    Gatos
+                    FELINOS
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.categoryOption, category === 'Peces' && styles.categoryOptionSelected]}
+                    style={[styles.categoryOption, category === 'PESCA' && styles.categoryOptionSelected]}
                     onPress={() => {
-                    setCategory('Peces');
+                    setCategory('PESCA');
                     setShowCategoryDropdown(false);
-                    checkFormValidityAndChanges({ category: 'Peces' });
+                    checkFormValidityAndChanges({ category: 'PESCA' });
                     }}
                 >
-                    <FontAwesome5 name="fish" size={18} color={category === 'Peces' ? '#9C27B0' : '#666'} />
-                    <Text style={[styles.categoryOptionText, category === 'Peces' && styles.categoryOptionTextSelected]}>
-                    Peces
+                    <FontAwesome5 name="fish" size={18} color={category === 'PESCA' ? '#9C27B0' : '#666'} />
+                    <Text style={[styles.categoryOptionText, category === 'PESCA' && styles.categoryOptionTextSelected]}>
+                    PESCA
                     </Text>
                 </TouchableOpacity>
                 </View>

@@ -31,6 +31,10 @@ export default function CrearProductoScreen({ navigation }) {
   const [formValid, setFormValid] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
+  // Estados para dropdowns
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  
   // Estado para modal de éxito
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   
@@ -324,30 +328,18 @@ export default function CrearProductoScreen({ navigation }) {
 
           {/* Card Container */}
           <View style={styles.card}>
-            {/* Category Icons */}
-            <View style={styles.categoryContainer}>
-              <TouchableOpacity
-                style={[styles.categoryButton, category === 'Canes' && styles.categoryButtonActive]}
-                onPress={() => {
-                  setCategory('Canes');
-                  checkFormValidity({ category: 'Canes' });
-                }}
-              >
-                <FontAwesome5 name="dog" size={24} color={category === 'Canes' ? '#fff' : '#9C27B0'} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.categoryButton, category === 'Felinos' && styles.categoryButtonActive]}
-                onPress={() => setCategory('Felinos')}
-              >
-                <FontAwesome5 name="cat" size={24} color={category === 'Felinos' ? '#fff' : '#9C27B0'} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.categoryButton, category === 'Peces' && styles.categoryButtonActive]}
-                onPress={() => setCategory('Peces')}
-              >
-                <FontAwesome5 name="fish" size={24} color={category === 'Peces' ? '#fff' : '#9C27B0'} />
+            {/* Imagen del Producto */}
+            <Text style={styles.sectionTitle}>Imagen del Producto</Text>
+            <View style={styles.imageSection}>
+              {imageUri ? (
+                <Image source={{ uri: imageUri }} style={styles.currentImage} />
+              ) : (
+                <View style={styles.placeholderImage}>
+                  <Ionicons name="image-outline" size={50} color="#ccc" />
+                </View>
+              )}
+              <TouchableOpacity style={styles.editImageButton} onPress={handleSelectImage}>
+                <Text style={styles.editImageButtonText}>Seleccionar img/</Text>
               </TouchableOpacity>
             </View>
 
@@ -413,30 +405,99 @@ export default function CrearProductoScreen({ navigation }) {
               </View>
             </View>
 
+            {/* Categorías */}
+            <Text style={styles.label}>Categorías <Text style={styles.asterisk}>*</Text></Text>
+            <TouchableOpacity 
+              style={styles.pickerContainer}
+              onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+            >
+              <Text style={[styles.pickerText, category && styles.pickerTextSelected]}>
+                {category === 'Canes' ? 'Perros' : category === 'Felinos' ? 'Gatos' : category === 'Peces' ? 'Peces' : 'Seleccionar categoría'}
+              </Text>
+              <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={20} color="#999" />
+            </TouchableOpacity>
+            {showCategoryDropdown && (
+              <View style={styles.categoryDropdown}>
+                <TouchableOpacity
+                  style={[styles.categoryOption, category === 'Canes' && styles.categoryOptionSelected]}
+                  onPress={() => {
+                    setCategory('Canes');
+                    setShowCategoryDropdown(false);
+                    checkFormValidity({ category: 'Canes' });
+                  }}
+                >
+                  <FontAwesome5 name="dog" size={18} color={category === 'Canes' ? '#9C27B0' : '#666'} />
+                  <Text style={[styles.categoryOptionText, category === 'Canes' && styles.categoryOptionTextSelected]}>
+                    CANES
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.categoryOption, category === 'Felinos' && styles.categoryOptionSelected]}
+                  onPress={() => {
+                    setCategory('Felinos');
+                    setShowCategoryDropdown(false);
+                    checkFormValidity({ category: 'Felinos' });
+                  }}
+                >
+                  <FontAwesome5 name="cat" size={18} color={category === 'Felinos' ? '#9C27B0' : '#666'} />
+                  <Text style={[styles.categoryOptionText, category === 'Felinos' && styles.categoryOptionTextSelected]}>
+                    FELINOS
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.categoryOption, category === 'Peces' && styles.categoryOptionSelected]}
+                  onPress={() => {
+                    setCategory('Peces');
+                    setShowCategoryDropdown(false);
+                    checkFormValidity({ category: 'Peces' });
+                  }}
+                >
+                  <FontAwesome5 name="fish" size={18} color={category === 'PESCA' ? '#9C27B0' : '#666'} />
+                  <Text style={[styles.categoryOptionText, category === 'PESCA' && styles.categoryOptionTextSelected]}>
+                    PESCA
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Estado */}
             <Text style={styles.label}>Estado <Text style={styles.asterisk}>*</Text></Text>
-            <View style={styles.statusContainer}>
-              <TouchableOpacity
-                style={[styles.statusButton, status === 'Activo' && styles.statusButtonActive]}
-                onPress={() => {
-                  setStatus('Activo');
-                  checkFormValidity({ status: 'Activo' });
-                }}
-              >
-                <Text style={[styles.statusButtonText, status === 'Activo' && styles.statusButtonTextActive]}>
-                  Activo
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.statusButton, status === 'Inactivo' && styles.statusButtonActive]}
-                onPress={() => setStatus('Inactivo')}
-              >
-                <Text style={[styles.statusButtonText, status === 'Inactivo' && styles.statusButtonTextActive]}>
-                  Inactivo
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.pickerContainer}
+              onPress={() => setShowStatusDropdown(!showStatusDropdown)}
+            >
+              <Text style={[styles.pickerText, status && styles.pickerTextSelected]}>{status}</Text>
+              <Ionicons name={showStatusDropdown ? "chevron-up" : "chevron-down"} size={20} color="#999" />
+            </TouchableOpacity>
+            {showStatusDropdown && (
+              <View style={styles.categoryDropdown}>
+                <TouchableOpacity
+                  style={[styles.statusButton, status === 'Activo' && styles.statusButtonActive]}
+                  onPress={() => {
+                    setStatus('Activo');
+                    setShowStatusDropdown(false);
+                    checkFormValidity({ status: 'Activo' });
+                  }}
+                >
+                  <Text style={[styles.statusButtonText, status === 'Activo' && styles.statusButtonTextActive]}>
+                    Activo
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.statusButton, status === 'Inactivo' && styles.statusButtonActive]}
+                  onPress={() => {
+                    setStatus('Inactivo');
+                    setShowStatusDropdown(false);
+                    checkFormValidity({ status: 'Inactivo' });
+                  }}
+                >
+                  <Text style={[styles.statusButtonText, status === 'Inactivo' && styles.statusButtonTextActive]}>
+                    Inactivo
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Descripción */}
             <Text style={styles.label}>Descripción</Text>
@@ -448,21 +509,6 @@ export default function CrearProductoScreen({ navigation }) {
               multiline
               numberOfLines={3}
             />
-
-            {/* Imagen del Producto */}
-            <Text style={styles.label}>Imagen del Producto</Text>
-            <TouchableOpacity style={styles.imageButton} onPress={handleSelectImage}>
-              <Text style={styles.imageButtonText}>
-                Seleccionar Archivo
-              </Text>
-              <Text style={styles.imageButtonSubtext}>
-                {imageUri ? '1 archivo seleccionado' : 'Ningún archivo seleccionado'}
-              </Text>
-            </TouchableOpacity>
-
-            {imageUri && (
-              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-            )}
 
             {/* Botones de Acción */}
             <View style={styles.buttonRow}>
@@ -572,6 +618,45 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 20,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#000',
+  },
+  imageSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  currentImage: {
+    width: 100,
+    height: 120,
+    borderRadius: 10,
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: 100,
+    height: 120,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editImageButton: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#9C27B0',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  editImageButtonText: {
+    fontSize: 14,
+    color: '#9C27B0',
+    fontWeight: '600',
+  },
   categoryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -614,37 +699,7 @@ const styles = StyleSheet.create({
   halfInput: {
     width: '48%',
   },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  statusButton: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#9C27B0',
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  statusButtonActive: {
-    backgroundColor: '#9C27B0',
-  },
-  statusButtonText: {
-    fontSize: 14,
-    color: '#9C27B0',
-    fontWeight: 'bold',
-  },
-  statusButtonTextActive: {
-    color: '#fff',
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-    paddingTop: 12,
-  },
-  imageButton: {
+  pickerContainer: {
     backgroundColor: '#fff',
     borderRadius: 25,
     borderWidth: 2,
@@ -654,21 +709,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
-  imageButtonText: {
+  pickerText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  pickerTextSelected: {
+    color: '#9C27B0',
+    fontWeight: '600',
+  },
+  categoryDropdown: {
+    marginBottom: 15,
+  },
+  categoryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  categoryOptionSelected: {
+    backgroundColor: '#F3E5F5',
+  },
+  categoryOptionText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 10,
+  },
+  categoryOptionTextSelected: {
+    color: '#9C27B0',
+    fontWeight: '600',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  statusButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  statusButtonActive: {
+    backgroundColor: '#F3E5F5',
+  },
+  statusButtonText: {
     fontSize: 14,
     color: '#666',
   },
-  imageButtonSubtext: {
-    fontSize: 12,
-    color: '#999',
+  statusButtonTextActive: {
+    color: '#9C27B0',
+    fontWeight: '600',
   },
-  imagePreview: {
-    width: '100%',
-    height: 150,
-    borderRadius: 15,
-    marginTop: 15,
-    resizeMode: 'cover',
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+    paddingTop: 12,
   },
   buttonRow: {
     flexDirection: 'row',
