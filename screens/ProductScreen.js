@@ -7,12 +7,12 @@ import {
     TouchableOpacity,
     TextInput,
     Image,
-    Alert, // Se mantiene por si es necesario, pero ya no se usa para alertas principales
+    Alert, 
     LayoutAnimation,
     Platform,
     UIManager,
     Modal,
-    Pressable, // Importar Pressable para el modal
+    Pressable,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
@@ -23,21 +23,21 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Definición de la paleta de colores (Alineada con el resto del proyecto)
 const COLORS = {
-    primaryPurple: '#9C27B0', // Usando el morado de tus estilos
+    primaryPurple: '#6A1B9A', // Morado Principal
     secondaryYellow: '#FFC107', // Amarillo/Dorado Principal
+    lightPurple: '#F3E5F5', // Morado muy claro
     textDark: '#212121',
     textLight: '#FFFFFF',
-    backgroundLight: '#f5f5f5',
-    cardBackground: '#FFFFFF', // Blanco para las tarjetas
+    backgroundLight: '#EEEEEE', 
+    cardBackground: '#FFFFFF', 
     shadowColor: '#000000',
     buttonText: '#FFFFFF',
-    lowStockRed: '#D32F2F',
+    lowStockRed: '#D32F2F', 
     safeStockGreen: '#4CAF50',
+    warningIcon: '#F57C00', 
 };
 
-// --- COMPONENTE MODAL DE ALERTA PERSONALIZADO (COPIADO Y AJUSTADO) ---
 const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, confirmText = 'ACEPTAR', cancelText, type = 'default' }) => {
     const { primaryPurple, secondaryYellow, textLight, textDark, lowStockRed } = COLORS;
     
@@ -46,7 +46,7 @@ const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, conf
     let cancelBg = secondaryYellow;
     let cancelTextColor = textDark;
 
-    if (type === 'error' || type === 'delete') { // 'delete' usará el rojo de error
+    if (type === 'error' || type === 'delete') {
         accentColor = lowStockRed;
         confirmBg = lowStockRed;
         cancelBg = secondaryYellow;
@@ -104,8 +104,6 @@ const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, conf
         </Modal>
     );
 };
-// --- FIN COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
-
 export default function ProductScreen({ navigation, route }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -113,7 +111,6 @@ export default function ProductScreen({ navigation, route }) {
     const [tempFilterOption, setTempFilterOption] = useState('Todos');
     const [products, setProducts] = useState([]);
     
-    // ESTADO PARA EL MODAL DE ALERTA/CONFIRMACIÓN PERSONALIZADO
     const [customAlertData, setCustomAlertData] = useState({
         isVisible: false,
         title: '',
@@ -124,7 +121,6 @@ export default function ProductScreen({ navigation, route }) {
         type: 'default',
     });
 
-    // Función centralizada para mostrar el CustomAlertModal
     const showCustomAlert = (title, message, onConfirm, onCancel = null, confirmText = 'ACEPTAR', type = 'default', cancelText = 'CANCELAR') => {
         setCustomAlertData({
             isVisible: true,
@@ -138,7 +134,7 @@ export default function ProductScreen({ navigation, route }) {
         });
     };
 
-    // ✅ Suscripción en tiempo real a Firestore
+    // Suscripción en tiempo real a Firestore 
     useEffect(() => {
         const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(
@@ -163,7 +159,6 @@ export default function ProductScreen({ navigation, route }) {
             },
             (error) => {
                 console.error('Error fetching products:', error);
-                // 1. REEMPLAZO DE ALERT NATIVO (Error simple)
                 showCustomAlert(
                     'Error de Carga',
                     'No se pudieron cargar los productos. Por favor, verifica tu conexión o intenta más tarde.',
@@ -187,7 +182,6 @@ export default function ProductScreen({ navigation, route }) {
         if (product) {
             navigation.navigate('EditarProducto', { producto: product });
         } else {
-            // 2. REEMPLAZO DE ALERT NATIVO (Error simple)
             showCustomAlert(
                 'Producto no encontrado',
                 'El producto que intentas editar no existe o ha sido eliminado.',
@@ -203,9 +197,8 @@ export default function ProductScreen({ navigation, route }) {
         const product = products.find((p) => p.id === id);
         const productName = product ? product.name : id;
         
-        // 3. REEMPLAZO DE ALERT NATIVO (Confirmación con dos botones)
         const onConfirm = async () => {
-            setCustomAlertData(prev => ({ ...prev, isVisible: false })); // Ocultar
+            setCustomAlertData(prev => ({ ...prev, isVisible: false })); 
             try {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 await deleteDoc(doc(db, 'products', id));
@@ -223,7 +216,7 @@ export default function ProductScreen({ navigation, route }) {
         };
 
         const onCancel = () => {
-            setCustomAlertData(prev => ({ ...prev, isVisible: false })); // Ocultar
+            setCustomAlertData(prev => ({ ...prev, isVisible: false })); 
         };
 
         showCustomAlert(
@@ -231,13 +224,13 @@ export default function ProductScreen({ navigation, route }) {
             `¿Desea borrar el producto "${productName}"? Esta acción es irreversible.`,
             onConfirm,
             onCancel,
-            'ELIMINAR', // Botón principal (destructivo)
-            'delete', // Tipo 'delete' para acento rojo
-            'CANCELAR' // Botón secundario (amarillo)
+            'ELIMINAR', 
+            'delete', 
+            'CANCELAR' 
         );
     };
 
-    // ✅ Filtro + ordenamiento (sin cambios)
+    // ✅ Filtro + ordenamiento (Lógica sin cambios)
     const filteredProducts = products
         .filter((item) => {
             const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -273,18 +266,86 @@ export default function ProductScreen({ navigation, route }) {
         setFilterModalVisible(true);
     };
 
+    const renderProductCard = ({ item }) => {
+        const isLowStock = item.stock <= 5;
+        
+        return (
+            <View style={styles.productCard}>
+                <View style={styles.leftContent}>
+                    {item.image ? (
+                        <Image source={{ uri: item.image }} style={styles.productImage} />
+                    ) : (
+                        <View style={styles.placeholderImage}>
+                            <Ionicons name="image-outline" size={25} color={COLORS.lightPurple} />
+                        </View>
+                    )}
+                    <View style={styles.statusAndCategory}>
+                        <Text style={styles.categoryTag} numberOfLines={1}>{item.category || 'Otros'}</Text>
+                        <View 
+                            style={[
+                                styles.statusBadge,
+                                item.status === 'Activo' ? styles.activeBadge : styles.inactiveBadge
+                            ]}
+                        >
+                            <Text style={styles.statusBadgeText}>
+                                {item.status === 'Activo' ? 'Activo' : 'Inactivo'}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.centerContent}>
+                    <Text style={styles.productName} numberOfLines={2}>
+                        {item.name}
+                    </Text>
+                    <View style={styles.priceStockRow}>
+                        <Text style={styles.productPrice}>Precio: ${item.price}</Text>
+                        <View style={[styles.stockBadge, isLowStock ? styles.lowStockBadge : styles.safeStockBadge]}>
+                            {isLowStock && (
+                                <Ionicons name="warning" size={10} color={COLORS.warningIcon} style={{ marginRight: 3 }} />
+                            )}
+                            <Text style={[styles.stockText, isLowStock && styles.lowStockText]}>
+                                Stock: {item.stock}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+                <View style={styles.rightContent}>
+                    {/* Botón EDITAR */}
+                    <TouchableOpacity 
+                        style={styles.actionTextButton}
+                        onPress={() => handleEdit(item.id)}
+                    >
+                        <Ionicons name="pencil-outline" size={16} color={COLORS.primaryPurple} />
+                        <Text style={[styles.actionButtonText, { color: COLORS.primaryPurple }]}>
+                            Editar
+                        </Text>
+                    </TouchableOpacity>
+                    {/* Botón ELIMINAR */}
+                    <TouchableOpacity 
+                        style={[styles.actionTextButton, styles.deleteTextButton]}
+                        onPress={() => handleDelete(item.id)}
+                    >
+                        <Ionicons name="trash-outline" size={16} color={COLORS.lowStockRed} />
+                        <Text style={[styles.actionButtonText, { color: COLORS.lowStockRed }]}>
+                            Eliminar
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
-            {/* Header (sin cambios) */}
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                    <Ionicons name="arrow-back" size={24} color={COLORS.primaryPurple} />
                 </TouchableOpacity>
-                <Text style={styles.title}>PRODUCTO</Text>
+                <Text style={[styles.title, { color: COLORS.primaryPurple }]}>PRODUCTOS</Text>
                 <View style={{ width: 24 }} />
             </View>
-
-            {/* Search Bar (sin cambios) */}
+            {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchInputWrapper}>
                     <Ionicons name="search-outline" size={20} color={COLORS.primaryPurple} style={styles.searchIcon} />
@@ -297,91 +358,33 @@ export default function ProductScreen({ navigation, route }) {
                     />
                 </View>
                 <TouchableOpacity 
-                    style={styles.filterButton}
+                    style={[styles.filterButton, { backgroundColor: COLORS.primaryPurple }]}
                     onPress={handleOpenFilter}
                 >
-                    <Ionicons name="filter-outline" size={24} color={COLORS.primaryPurple} />
+                    <Ionicons name="filter-outline" size={24} color={COLORS.textLight} />
                 </TouchableOpacity>
             </View>
 
-            {/* Products Grid (sin cambios) */}
+            {/* Products List (FlatList) */}
             {filteredProducts.length === 0 ? (
                 <Text style={styles.emptyMessage}>No hay productos cargados.</Text>
             ) : (
                 <FlatList
                     data={filteredProducts}
                     keyExtractor={(item) => item.id}
-                    numColumns={2}
-                    columnWrapperStyle={styles.row}
+                    key={filterOption} 
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <View style={styles.productCard}>
-                            {/* Delete button - top left */}
-                            <TouchableOpacity 
-                                style={styles.deleteButton}
-                                onPress={() => handleDelete(item.id)}
-                            >
-                                <Ionicons name="close" size={20} color={COLORS.primaryPurple} />
-                            </TouchableOpacity>
-
-                            {/* Edit button - top right */}
-                            <TouchableOpacity 
-                                style={styles.editButton}
-                                onPress={() => handleEdit(item.id)}
-                            >
-                                <Ionicons name="pencil" size={20} color={COLORS.primaryPurple} />
-                            </TouchableOpacity>
-
-                            {/* Product Image */}
-                            {item.image ? (
-                                <Image source={{ uri: item.image }} style={styles.productImage} />
-                            ) : (
-                                <View style={styles.placeholderImage}>
-                                    <Ionicons name="image-outline" size={50} color="#ccc" />
-                                </View>
-                            )}
-
-                            {/* Product Name */}
-                            <Text style={styles.productName}>{item.name}</Text>
-
-                            {/* Price */}
-                            <Text style={styles.productPrice}> 
-                                 
-                                    Precio: ${item.price}
-                                
-                            </Text>
-
-                            {/* Stock */}
-                            <Text style={[
-                                styles.productAvailability,
-                                item.stock <= 5 && styles.lowStockText
-                            ]}>
-                                Stock: {item.stock}
-                            </Text>
-
-                            {/* Status Button */}
-                            <TouchableOpacity 
-                                style={[
-                                    styles.statusButton,
-                                    item.status === 'Activo' ? styles.activeButton : styles.inactiveButton
-                                ]}
-                            >
-                                <Text style={styles.statusButtonText}>
-                                    {item.status === 'Activo' ? 'Activo' : 'Inactivo'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                    renderItem={renderProductCard}
                 />
             )}
 
-            {/* Floating Add Button (sin cambios) */}
+            {/* Floating Add Button */}
             <TouchableOpacity style={styles.floatingButton} onPress={handleAddProduct}>
-                <Ionicons name="add" size={32} color="#fff" />
+                <Ionicons name="add" size={32} color={COLORS.secondaryYellow} />
             </TouchableOpacity>
 
-            {/* Filter Modal (sin cambios) */}
+            {/* Filter Modal */}
             <Modal
                 visible={filterModalVisible}
                 transparent={true}
@@ -394,11 +397,11 @@ export default function ProductScreen({ navigation, route }) {
                     onPress={() => setFilterModalVisible(false)}
                 >
                     <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-                        <Text style={styles.modalTitle}>Filtrar por categoría</Text>
+                        <Text style={[styles.modalTitle, { color: COLORS.primaryPurple }]}>Filtrar y Ordenar</Text>
                         
                         {/* Ordenar Section */}
                         <View style={styles.filterSection}>
-                            <Text style={styles.filterSectionTitle}>Ordenar</Text>
+                            <Text style={[styles.filterSectionTitle, { color: COLORS.textDark }]}>Ordenar por Nombre</Text>
                             <View style={styles.filterRow}>
                                 <TouchableOpacity
                                     style={[
@@ -411,7 +414,7 @@ export default function ProductScreen({ navigation, route }) {
                                         styles.filterOptionButtonText,
                                         tempFilterOption === 'A-Z' && styles.filterOptionButtonTextSelected
                                     ]}>
-                                        Nombre A-Z
+                                        A-Z
                                     </Text>
                                 </TouchableOpacity>
 
@@ -426,38 +429,76 @@ export default function ProductScreen({ navigation, route }) {
                                         styles.filterOptionButtonText,
                                         tempFilterOption === 'Z-A' && styles.filterOptionButtonTextSelected
                                     ]}>
-                                        Nombre Z-A
+                                        Z-A
                                     </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
-
-                        {/* Categories Section */}
-                        <View style={styles.filterRow}>
+                        
+                        {/* Stock Section */}
+                        <View style={styles.filterSection}>
+                            <Text style={[styles.filterSectionTitle, { color: COLORS.textDark }]}>Stock</Text>
                             <TouchableOpacity
                                 style={[
-                                    styles.filterCategoryButton,
-                                    tempFilterOption === 'Canes' && styles.filterOptionButtonSelected
+                                    styles.filterCategoryButtonFull,
+                                    tempFilterOption === 'Stock Bajo' && styles.filterOptionButtonSelected
                                 ]}
-                                onPress={() => setTempFilterOption('Canes')}
+                                onPress={() => setTempFilterOption('Stock Bajo')}
                             >
-                                <Ionicons name="paw" size={20} color={tempFilterOption === 'Canes' ? COLORS.primaryPurple : '#333'} />
+                                <Ionicons name="cube-outline" size={20} color={tempFilterOption === 'Stock Bajo' ? COLORS.primaryPurple : COLORS.textDark} />
                                 <Text style={[
                                     styles.filterCategoryText,
-                                    tempFilterOption === 'Canes' && styles.filterOptionButtonTextSelected
+                                    tempFilterOption === 'Stock Bajo' && styles.filterOptionButtonTextSelected
                                 ]}>
-                                    Canes
+                                    Stock Bajo (≤ 5)
                                 </Text>
                             </TouchableOpacity>
+                        </View>
 
+                        {/* Categories Section */}
+                        <View style={styles.filterSection}>
+                            <Text style={[styles.filterSectionTitle, { color: COLORS.textDark }]}>Categorías</Text>
+                            <View style={styles.filterRow}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterCategoryButton,
+                                        tempFilterOption === 'Canes' && styles.filterOptionButtonSelected
+                                    ]}
+                                    onPress={() => setTempFilterOption('Canes')}
+                                >
+                                    <Ionicons name="paw" size={20} color={tempFilterOption === 'Canes' ? COLORS.primaryPurple : COLORS.textDark} />
+                                    <Text style={[
+                                        styles.filterCategoryText,
+                                        tempFilterOption === 'Canes' && styles.filterOptionButtonTextSelected
+                                    ]}>
+                                        Canes
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.filterCategoryButton,
+                                        tempFilterOption === 'Felinos' && styles.filterOptionButtonSelected
+                                    ]}
+                                    onPress={() => setTempFilterOption('Felinos')}
+                                >
+                                    <Ionicons name="paw" size={20} color={tempFilterOption === 'Felinos' ? COLORS.primaryPurple : COLORS.textDark} />
+                                    <Text style={[
+                                        styles.filterCategoryText,
+                                        tempFilterOption === 'Felinos' && styles.filterOptionButtonTextSelected
+                                    ]}>
+                                        Felinos
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                             <TouchableOpacity
                                 style={[
-                                    styles.filterCategoryButton,
+                                    styles.filterCategoryButtonFull,
                                     tempFilterOption === 'Peces' && styles.filterOptionButtonSelected
                                 ]}
                                 onPress={() => setTempFilterOption('Peces')}
                             >
-                                <Ionicons name="fish" size={20} color={tempFilterOption === 'Peces' ? COLORS.primaryPurple : '#333'} />
+                                <Ionicons name="fish" size={20} color={tempFilterOption === 'Peces' ? COLORS.primaryPurple : COLORS.textDark} />
                                 <Text style={[
                                     styles.filterCategoryText,
                                     tempFilterOption === 'Peces' && styles.filterOptionButtonTextSelected
@@ -465,57 +506,38 @@ export default function ProductScreen({ navigation, route }) {
                                     Peces
                                 </Text>
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.filterCategoryButtonFull,
+                                    tempFilterOption === 'Todos' && styles.filterOptionButtonSelected
+                                ]}
+                                onPress={() => setTempFilterOption('Todos')}
+                            >
+                                <Ionicons name="globe-outline" size={20} color={tempFilterOption === 'Todos' ? COLORS.primaryPurple : COLORS.textDark} />
+                                <Text style={[
+                                    styles.filterCategoryText,
+                                    tempFilterOption === 'Todos' && styles.filterOptionButtonTextSelected
+                                ]}>
+                                    Mostrar Todos
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-
-                        {/* Felinos Button */}
-                        <TouchableOpacity
-                            style={[
-                                styles.filterCategoryButtonFull,
-                                tempFilterOption === 'Felinos' && styles.filterOptionButtonSelected
-                            ]}
-                            onPress={() => setTempFilterOption('Felinos')}
-                        >
-                            <Ionicons name="paw" size={20} color={tempFilterOption === 'Felinos' ? COLORS.primaryPurple : '#333'} />
-                            <Text style={[
-                                styles.filterCategoryText,
-                                tempFilterOption === 'Felinos' && styles.filterOptionButtonTextSelected
-                            ]}>
-                                Felinos
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* Stock Bajo Button */}
-                        <TouchableOpacity
-                            style={[
-                                styles.filterCategoryButtonFull,
-                                tempFilterOption === 'Stock Bajo' && styles.filterOptionButtonSelected
-                            ]}
-                            onPress={() => setTempFilterOption('Stock Bajo')}
-                        >
-                            <Ionicons name="cube-outline" size={20} color={tempFilterOption === 'Stock Bajo' ? COLORS.primaryPurple : '#333'} />
-                            <Text style={[
-                                styles.filterCategoryText,
-                                tempFilterOption === 'Stock Bajo' && styles.filterOptionButtonTextSelected
-                            ]}>
-                                Stock Bajo
-                            </Text>
-                        </TouchableOpacity>
 
                         {/* Action Buttons */}
                         <View style={styles.filterActionsRow}>
                             <TouchableOpacity 
-                                style={[styles.clearButton, { borderColor: COLORS.primaryPurple }]}
+                                style={[styles.clearButton, { borderColor: COLORS.primaryPurple, backgroundColor: COLORS.secondaryYellow }]}
                                 onPress={handleClearFilter}
                             >
-                                <Ionicons name="brush-outline" size={20} color={COLORS.primaryPurple} />
-                                <Text style={[styles.clearButtonText, { color: COLORS.primaryPurple }]}>Limpiar</Text>
+                                <Ionicons name="brush-outline" size={20} color={COLORS.textDark} />
+                                <Text style={[styles.clearButtonText, { color: COLORS.textDark }]}>Limpiar</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity 
                                 style={[styles.applyButton, { backgroundColor: COLORS.primaryPurple }]}
                                 onPress={handleApplyFilter}
                             >
-                                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.textLight} />
                                 <Text style={styles.applyButtonText}>Aplicar</Text>
                             </TouchableOpacity>
                         </View>
@@ -523,7 +545,7 @@ export default function ProductScreen({ navigation, route }) {
                 </TouchableOpacity>
             </Modal>
 
-            {/* --- MODAL DE ALERTA/CONFIRMACIÓN PERSONALIZADO --- */}
+            {/* --- MODAL DE ALERTA--- */}
             <CustomAlertModal
                 isVisible={customAlertData.isVisible}
                 title={customAlertData.title}
@@ -559,14 +581,14 @@ const alertStyles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 8,
         borderTopWidth: 5,
-        borderTopColor: COLORS.primaryPurple, // Color dinámico
+        borderTopColor: COLORS.primaryPurple, 
     },
     modalTitle: {
         marginBottom: 15,
         textAlign: 'center',
         fontSize: 22,
         fontWeight: 'bold',
-        color: COLORS.primaryPurple, // Color dinámico
+        color: COLORS.primaryPurple, 
     },
     modalMessage: {
         marginBottom: 25,
@@ -596,15 +618,15 @@ const alertStyles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         fontSize: 16,
-        color: COLORS.textLight, // Color dinámico
+        color: COLORS.textLight, 
     },
 });
 
+// --- ESTILOS PRINCIPALES ---
 const styles = StyleSheet.create({
-    // ... (Manteniendo tus estilos existentes y reemplazando valores de color donde aplica)
     container: { 
         flex: 1, 
-        backgroundColor: '#fff', 
+        backgroundColor: COLORS.backgroundLight, 
         paddingTop: 40,
     },
     header: {
@@ -613,28 +635,34 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 15,
+        backgroundColor: COLORS.cardBackground, 
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.lightPurple, 
     },
     title: { 
         fontSize: 18, 
         fontWeight: 'bold',
         textAlign: 'center',
+        color: COLORS.primaryPurple, 
     },
     searchContainer: {
         flexDirection: 'row',
         paddingHorizontal: 20,
-        marginBottom: 20,
+        paddingVertical: 10,
+        marginBottom: 10,
         alignItems: 'center',
+        backgroundColor: COLORS.cardBackground,
     },
     searchInputWrapper: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.cardBackground,
         borderRadius: 25,
         borderWidth: 2,
-        borderColor: COLORS.primaryPurple,
+        borderColor: COLORS.primaryPurple, 
         paddingHorizontal: 15,
-        paddingVertical: 10,
+        paddingVertical: 8,
         marginRight: 10,
     },
     searchIcon: {
@@ -643,7 +671,8 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 14,
-        color: '#000',
+        color: COLORS.textDark,
+        paddingVertical: 0, 
     },
     filterButton: {
         width: 48,
@@ -653,110 +682,154 @@ const styles = StyleSheet.create({
         borderColor: COLORS.primaryPurple,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.primaryPurple, 
     },
     scrollContent: {
         paddingHorizontal: 15,
+        paddingTop: 10,
         paddingBottom: 100,
     },
-    row: {
-        justifyContent: 'space-between',
-        marginBottom: 15,
-    },
+    // --- ESTILOS DE LA CARD ---
     productCard: {
-        backgroundColor: '#fff',
-        borderColor: COLORS.primaryPurple,
-        borderWidth: 2,
+        flexDirection: 'row',
+        backgroundColor: COLORS.cardBackground,
         borderRadius: 15,
-        padding: 15,
-        width: '48%',
+        borderLeftWidth: 5,
+        borderLeftColor: COLORS.primaryPurple,
+        padding: 8, 
+        marginBottom: 10, 
         alignItems: 'center',
-        position: 'relative',
-        elevation: 2,
-        shadowColor: '#000',
+        justifyContent: 'space-between',
+        elevation: 4,
+        shadowColor: COLORS.shadowColor,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOpacity: 0.1, 
+        shadowRadius: 3,
+        minHeight: 85, 
     },
-    deleteButton: {
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        zIndex: 10,
-    },
-    editButton: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        zIndex: 10,
+    leftContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 10,
     },
     productImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 10,
-        marginTop: 25,
-        marginBottom: 10,
+        width: 55, 
+        height: 55,
+        borderRadius: 8,
         resizeMode: 'cover',
     },
     placeholderImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 10,
-        marginTop: 25,
-        marginBottom: 10,
+        width: 55,
+        height: 55,
+        borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: COLORS.lightPurple,
+    },
+    statusAndCategory: {
+        marginLeft: 8,
+        justifyContent: 'center',
+    },
+    categoryTag: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: COLORS.primaryPurple,
+        backgroundColor: COLORS.lightPurple,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginBottom: 4, 
+        alignSelf: 'flex-start', 
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+    },
+    activeBadge: {
+        backgroundColor: COLORS.safeStockGreen,
+    },
+    inactiveBadge: {
+        backgroundColor: COLORS.lowStockRed,
+    },
+    statusBadgeText: {
+        color: COLORS.buttonText,
+        fontSize: 9,
+        fontWeight: '600',
+    },
+    centerContent: {
+        flex: 1, 
+        justifyContent: 'center',
+        marginRight: 10,
     },
     productName: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#000',
-        textAlign: 'center',
-        marginBottom: 4,
+        fontSize: 14, 
+        fontWeight: '700',
+        color: COLORS.textDark,
+        marginBottom: 5,
     },
-    productonombreprecio: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#000',
+    priceStockRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start', 
     },
     productPrice: {
-        fontSize: 16,
+        fontSize: 13, 
         fontWeight: 'bold',
-        color: '#127f19be',
-        marginBottom: 2,
+        color: COLORS.primaryPurple,
+        marginRight: 10,
     },
-    productStock: {
-        fontSize: 12,
-        color: '#666',
-        marginBottom: 4,
+    stockBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 7,
+        paddingVertical: 2,
+        borderRadius: 10,
     },
-    productAvailability: {
-        fontSize: 11,
-        color: '#666',
-        marginBottom: 8,
+    safeStockBadge: {
+        backgroundColor: COLORS.safeStockGreen + '20',
+        borderWidth: 1,
+        borderColor: COLORS.safeStockGreen,
+    },
+    lowStockBadge: {
+        backgroundColor: COLORS.lowStockRed + '20',
+        borderWidth: 1,
+        borderColor: COLORS.lowStockRed,
+    },
+    stockText: {
+        fontSize: 10, 
+        fontWeight: '600',
+        color: COLORS.textDark,
     },
     lowStockText: {
         color: COLORS.lowStockRed,
-        fontWeight: 'bold',
     },
-    statusButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 6,
-        borderRadius: 15,
-        minWidth: 80,
+    rightContent: {
+        flexDirection: 'column',
+        justifyContent: 'center', 
         alignItems: 'center',
+        marginLeft: 10,
     },
-    activeButton: {
-        backgroundColor: COLORS.safeStockGreen,
+    // --- NUEVOS ESTILOS PARA BOTONES DE TEXTO ---
+    actionTextButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 5,
+        borderRadius: 8,
+        backgroundColor: COLORS.lightPurple,
+        marginVertical: 4, 
+        minWidth: 80, 
     },
-    inactiveButton: {
-        backgroundColor: COLORS.lowStockRed,
+    deleteTextButton: {
+        backgroundColor: COLORS.secondaryYellow + '40', 
     },
-    statusButtonText: {
-        color: '#fff',
-        fontSize: 12,
+    actionButtonText: {
+        fontSize: 11,
         fontWeight: '600',
+        marginLeft: 4,
     },
     floatingButton: {
         position: 'absolute',
@@ -768,50 +841,54 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
+        elevation: 6,
+        shadowColor: COLORS.shadowColor,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.35,
         shadowRadius: 5,
     },
     emptyMessage: {
         textAlign: 'center',
         fontSize: 16,
-        color: '#999',
+        color: COLORS.textDark,
         marginTop: 40,
     },
-    // Modal styles
+    // Modal styles (Filter)
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.cardBackground,
         borderRadius: 20,
-        borderWidth: 2,
+        borderWidth: 3,
         borderColor: COLORS.primaryPurple,
         padding: 25,
         width: '85%',
         maxWidth: 350,
+        elevation: 10,
     },
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 20,
         textAlign: 'center',
-        color: '#000',
+        color: COLORS.primaryPurple,
     },
     filterSection: {
-        marginBottom: 15,
+        marginBottom: 18,
+        paddingVertical: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.lightPurple,
     },
     filterSectionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: 'bold',
         marginBottom: 10,
-        textAlign: 'center',
-        color: '#000',
+        textAlign: 'left',
+        color: COLORS.textDark,
     },
     filterRow: {
         flexDirection: 'row',
@@ -821,22 +898,22 @@ const styles = StyleSheet.create({
     filterOptionButton: {
         flex: 1,
         paddingVertical: 12,
-        paddingHorizontal: 15,
+        paddingHorizontal: 10,
         borderRadius: 25,
         borderWidth: 2,
         borderColor: COLORS.primaryPurple,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.cardBackground,
         marginHorizontal: 5,
         alignItems: 'center',
     },
     filterOptionButtonSelected: {
-        backgroundColor: '#F3E5F5',
+        backgroundColor: COLORS.lightPurple,
         borderColor: COLORS.primaryPurple,
     },
     filterOptionButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#333',
+        color: COLORS.textDark,
     },
     filterOptionButtonTextSelected: {
         color: COLORS.primaryPurple,
@@ -851,7 +928,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         borderWidth: 2,
         borderColor: COLORS.primaryPurple,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.cardBackground,
         marginHorizontal: 5,
     },
     filterCategoryButtonFull: {
@@ -863,21 +940,21 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         borderWidth: 2,
         borderColor: COLORS.primaryPurple,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.cardBackground,
         marginBottom: 12,
-        alignSelf: 'center',
-        minWidth: '60%',
+        alignSelf: 'stretch',
+        marginHorizontal: 5,
     },
     filterCategoryText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#333',
+        color: COLORS.textDark,
         marginLeft: 8,
     },
     filterActionsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 10,
+        marginTop: 15,
     },
     clearButton: {
         flex: 1,
@@ -888,14 +965,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: 25,
         borderWidth: 2,
-        borderColor: COLORS.primaryPurple, // Morado
-        backgroundColor: '#fff',
+        borderColor: COLORS.secondaryYellow, 
+        backgroundColor: COLORS.secondaryYellow, 
         marginRight: 8,
     },
     clearButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: COLORS.primaryPurple, // Morado
+        color: COLORS.textDark, 
         marginLeft: 6,
     },
     applyButton: {
@@ -906,13 +983,13 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 25,
-        backgroundColor: COLORS.primaryPurple, // Morado
+        backgroundColor: COLORS.primaryPurple, 
         marginLeft: 8,
     },
     applyButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#fff',
+        color: COLORS.textLight, 
         marginLeft: 6,
     },
 });
