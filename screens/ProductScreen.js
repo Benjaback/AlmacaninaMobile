@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     TextInput,
     Image,
-    Alert, // Se mantiene por si es necesario, pero ya no se usa para alertas principales
+    Alert,
     LayoutAnimation,
     Platform,
     UIManager,
@@ -162,7 +162,6 @@ export default function ProductScreen({ navigation, route }) {
                 setProducts(items);
             },
             (error) => {
-                console.error('Error fetching products:', error);
                 // 1. REEMPLAZO DE ALERT NATIVO (Error simple)
                 showCustomAlert(
                     'Error de Carga',

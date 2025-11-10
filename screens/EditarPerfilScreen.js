@@ -17,7 +17,7 @@ import { auth, db } from '../src/config/firebaseConfig';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 
-//paleta de colores
+
 const COLORS = {
   primaryPurple: '#8F08AA',
   secondaryYellow: '#FFC107',
@@ -31,7 +31,7 @@ const COLORS = {
   safeStockGreen: '#4CAF50',
 };
 
-// --- COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
+// COMPONENTE MODAL DE ALERTA
 const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, confirmText = 'ACEPTAR', cancelText, type = 'default' }) => {
   const { primaryPurple, secondaryYellow, textLight, textDark, lowStockRed } = COLORS;
   
@@ -97,7 +97,7 @@ const CustomAlertModal = ({ isVisible, title, message, onConfirm, onCancel, conf
     </Modal>
   );
 };
-// --- FIN COMPONENTE MODAL DE ALERTA PERSONALIZADO ---
+// FIN MODAL
 
 // Componente separado para mostrar cada campo de datos
 const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", isEditable = false, isEditing, onChangeText, error, keyboardType = "default", maxLength, prefix }) => {
@@ -221,14 +221,13 @@ export default function EditarPerfilScreen({ navigation }) {
     });
   };
 
-  // Referencias para debounce de validación (evitar re-renders)
+  // Referencias para debounce de validación
   const dniValidationTimeout = useRef(null);
   const phoneValidationTimeout = useRef(null);
   
   // Referencia para el ScrollView
   const scrollViewRef = useRef(null);
 
-  // Función helper para inicializar campos de edición
   const initializeEditFields = useCallback((data) => {
     setEditFirstName(data.firstName || '');
     setEditLastName(data.lastName || '');
@@ -236,7 +235,6 @@ export default function EditarPerfilScreen({ navigation }) {
     setEditPhone(data.phone ? data.phone.replace(/^\+54\s?/, '') : '');
   }, []);
 
-  // Función helper para limpiar errores
   const clearErrors = useCallback(() => {
     setErrors({
       firstName: '',
@@ -251,10 +249,8 @@ export default function EditarPerfilScreen({ navigation }) {
     try {
       if (!user) return;
 
-      // Guardar el UID del usuario
       setCurrentUserId(user.uid);
 
-      // Datos básicos del auth
       const basicData = {
         email: user.email || '',
         firstName: '',
@@ -707,7 +703,7 @@ export default function EditarPerfilScreen({ navigation }) {
         } catch (error) {
           console.log('Error verificando unicidad en tiempo real:', error);
         }
-      }, 1000); // Esperar 1 segundo después de que el usuario deje de escribir
+      }, 1000);
       
       dniValidationTimeout.current = timeout;
     }

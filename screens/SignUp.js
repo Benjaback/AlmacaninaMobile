@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function SignUp({ navigation }) {
+  //estado de campos de formularios
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,13 +24,13 @@ export default function SignUp({ navigation }) {
   const [hasUppercase, setHasUppercase] = useState(false);
   const [hasLowercase, setHasLowercase] = useState(false);
   const [hasNumber, setHasNumber] = useState(false);
-  
+  //estado de mensaje de error
   const [firstNameError, setFirstNameError] = useState('');
   const [lastNameError, setLastNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-
+  //estado de mensaje de exito
   const [firstNameSuccess, setFirstNameSuccess] = useState('');
   const [lastNameSuccess, setLastNameSuccess] = useState('');
   const [emailSuccess, setEmailSuccess] = useState('');
@@ -45,13 +46,13 @@ export default function SignUp({ navigation }) {
   };
 
   const handleSignUp = async () => {
-
+    //limpia errores
     setFirstNameError('');
     setLastNameError('');
     setEmailError('');
     setPasswordError('');
     setConfirmPasswordError('');
-
+    //valida campos obligatorio
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       Toast.show({
         type: 'error',
@@ -78,8 +79,8 @@ export default function SignUp({ navigation }) {
         email: email.toLowerCase().trim(),
         fullName: `${firstName.trim()} ${lastName.trim()}`,
         createdAt: new Date().toISOString(),
-        dni: '', // Campo vacío inicialmente - se puede agregar en editar perfil
-        phone: '', // Campo vacío inicialmente - se puede agregar en editar perfil
+        dni: '',
+        phone: '',
         updatedAt: new Date().toISOString()
       });
       
@@ -225,8 +226,8 @@ export default function SignUp({ navigation }) {
                 setEmailSuccess('Correo válido.');
               }
             }}
-            keyboardType="email-address"
-            autoCapitalize="none"
+            keyboardType="email-address" //teclado optimizado para email
+            autoCapitalize="none" //sin
           />
         </View>
         {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
@@ -273,7 +274,7 @@ export default function SignUp({ navigation }) {
                 // setPasswordSuccess('Campo válido.');
               }
             }}
-            secureTextEntry={!showPassword}
+            secureTextEntry={!showPassword} //ver contraseña
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
             <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color="#ccc" />

@@ -19,7 +19,7 @@ const handleLogin = async () => {
     if (!email || !password) {
       Toast.show({
         type: 'error',
-        text1: '❌ Error',
+        text1: 'Error',
         text2: 'Todos los campos son obligatorios.',
       });
       return;
@@ -33,9 +33,6 @@ const handleLogin = async () => {
         type: 'success',
         text1: 'Inicio de sesión exitoso',
         text2: 'Has iniciado sesión correctamente.',
-        props: {
-          style: { backgroundColor: '#8F08AA' }
-        }
       });
       
       setTimeout(() => {

@@ -138,7 +138,7 @@ const ServiceCard = ({ service }) => (
     </View>
 );
 
-// Tarjeta para mostrar Productos con Stock Bajo (sin cambios)
+// Tarjeta para mostrar Productos con Stock Bajo
 const LowStockCard = ({ product, onPress }) => (
     <TouchableOpacity 
         style={styles.lowStockCard} 
@@ -263,7 +263,7 @@ function Home({ navigation, tabNavigation }) {
                     } catch (error) {
                         console.error('Error en inicialización de consulta de productos:', error);
                     }
-                }, 1500); // Esperar 1.5 segundos para asegurar sincronización
+                }, 1500);
             } else {
                 setUserName('');
                 setLowStockProducts([]);

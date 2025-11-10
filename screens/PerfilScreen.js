@@ -6,7 +6,7 @@ import {
     TouchableOpacity,
     ScrollView,
     Image,
-    Alert, // Se mantiene, pero se usa menos
+    Alert,
     Modal,
     TextInput,
     ActivityIndicator,
@@ -178,7 +178,7 @@ export default function PantallaPerfil({ navigation }) {
     const [hasNumber, setHasNumber] = useState(false);
     const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
     
-    // ESTADO PARA EL MODAL DE ACCIONES DE IMAGEN (NUEVO)
+    // ESTADO PARA EL MODAL DE ACCIONES DE IMAGEN
     const [isImageActionModalVisible, setIsImageActionModalVisible] = useState(false);
 
     // ESTADO para controlar el modal de alerta/confirmación
@@ -205,7 +205,7 @@ export default function PantallaPerfil({ navigation }) {
         });
     };
 
-    // Función para generar iniciales del nombre (sin cambios)
+    // Función para generar iniciales del nombre
     const getInitials = (name) => {
         if (!name || name.trim() === '') return 'U';
         const names = name.trim().split(' ').filter(n => n.length > 0);
@@ -215,7 +215,7 @@ export default function PantallaPerfil({ navigation }) {
         return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
     };
 
-    // Función para guardar imagen en Firestore (sin cambios)
+    // Función para guardar imagen en Firestore
     const saveImageToFirestore = async (imageUri) => {
         try {
             const user = auth.currentUser;
@@ -250,7 +250,7 @@ export default function PantallaPerfil({ navigation }) {
         setIsImageActionModalVisible(true);
     };
 
-    // Función para abrir cámara (CERRANDO el modal de acciones)
+    // Función para abrir cámara
     const openCamera = async () => {
         setIsImageActionModalVisible(false); // Cierra el modal de acciones
         try {
@@ -293,7 +293,7 @@ export default function PantallaPerfil({ navigation }) {
         }
     };
 
-    // abrir galería (CERRANDO el modal de acciones)
+    // abrir galería
     const openGallery = async () => {
         setIsImageActionModalVisible(false); // Cierra el modal de acciones
         try {
@@ -336,7 +336,7 @@ export default function PantallaPerfil({ navigation }) {
         }
     };
 
-    // CIerre de sesion (usa CustomAlertModal - sin cambios en lógica)
+    // CIerre de sesion
     const handleLogOut = () => {
         const onConfirm = async () => {
             setCustomAlertData(prev => ({ ...prev, isVisible: false }));
@@ -379,7 +379,7 @@ export default function PantallaPerfil({ navigation }) {
         );
     };
 
-    // useEffect para obtener datos del usuario autenticado (sin cambios)
+    // useEffect para obtener datos del usuario autenticado
     useEffect(() => {
         let unsubscribeFirestore = null;
         
@@ -518,7 +518,7 @@ export default function PantallaPerfil({ navigation }) {
         }
     };
 
-    // esto sirve para los iconos (sin cambios)
+    // esto sirve para los iconos
     const MenuItem = ({ icon, title, subtitle, onPress, iconType = "FontAwesome" }) => {
         const IconComponent = iconType === "MaterialIcons" ? MaterialIcons : 
                              iconType === "Ionicons" ? Ionicons : FontAwesome;
@@ -752,7 +752,7 @@ export default function PantallaPerfil({ navigation }) {
                     </View>
                 </Modal>
 
-                {/* Modal para ver imagen de perfil ampliada (sin cambios) */}
+                
                 <Modal
                     visible={imageModalVisible}
                     transparent={true}
@@ -786,7 +786,7 @@ export default function PantallaPerfil({ navigation }) {
                     </View>
                 </Modal>
 
-                {/* --- MODAL DE ALERTA/CONFIRMACIÓN PERSONALIZADO --- */}
+                {/* --- MODAL DE ALERTA --- */}
                 <CustomAlertModal
                     isVisible={customAlertData.isVisible}
                     title={customAlertData.title}
@@ -813,7 +813,7 @@ export default function PantallaPerfil({ navigation }) {
     );
 }
 
-// --- ESTILOS ADICIONALES PARA EL MODAL DE ACCIONES DE IMAGEN (ACTUALIZADOS) ---
+// ESTILOS ADICIONALES PARA EL MODAL DE ACCIONES DE IMAGEN
 const imageActionStyles = StyleSheet.create({
     centeredView: {
         flex: 1,
@@ -870,13 +870,13 @@ const imageActionStyles = StyleSheet.create({
         width: '90%',
         padding: 15,
         borderRadius: 10,
-        backgroundColor: COLORS.secondaryYellow, // <--- CAMBIO AQUÍ: AMARILLO/DORADO
+        backgroundColor: COLORS.secondaryYellow,
         marginTop: 10,
         marginBottom: 10,
         elevation: 2,
     },
     cancelText: {
-        color: COLORS.textDark, // <--- CAMBIO AQUÍ: TEXTO OSCURO PARA CONTRASTE
+        color: COLORS.textDark, 
         fontWeight: '600',
         textAlign: 'center',
         fontSize: 16,
