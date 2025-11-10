@@ -299,15 +299,17 @@ export default function ProductScreen({ navigation, route }) {
                     </Text>
                     <View style={styles.priceStockRow}>
                         <Text style={styles.productPrice}>Precio: ${item.price}</Text>
+                        </View>
                         <View style={[styles.stockBadge, isLowStock ? styles.lowStockBadge : styles.safeStockBadge]}>
                             {isLowStock && (
-                                <Ionicons name="warning" size={10} color={COLORS.warningIcon} style={{ marginRight: 3 }} />
+                                <Ionicons name="warning" size={10} color={COLORS.warningIcon} style={{ marginRight: 10 }} />
                             )}
                             <Text style={[styles.stockText, isLowStock && styles.lowStockText]}>
                                 Stock: {item.stock}
                             </Text>
                         </View>
-                    </View>
+                    
+                    
                 </View>
                 <View style={styles.rightContent}>
                     {/* Botón EDITAR */}

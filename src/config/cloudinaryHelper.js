@@ -50,8 +50,6 @@ export const uploadImageToCloudinary = async (imageUri, folder = 'products') => 
 };
 
 /**
- * Elimina una imagen de Cloudinary (requiere backend con firma)
- * Nota: La eliminación directa desde el frontend no es segura
  * @param {string} publicId - Public ID de la imagen en Cloudinary
  */
 export const deleteImageFromCloudinary = async (publicId) => {

@@ -19,7 +19,8 @@ import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { auth, db } from '../src/config/firebaseConfig';
-import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
+import { uploadImageToCloudinary } from '../src/config/cloudinaryHelper';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
@@ -221,11 +222,34 @@ export default function PantallaPerfil({ navigation }) {
             const user = auth.currentUser;
             if (!user) return;
 
+            // Subir imagen a Cloudinary
+            console.log('Subiendo foto de perfil a Cloudinary...');
+            const cloudinaryUrl = await uploadImageToCloudinary(imageUri, 'profiles');
+            console.log('Foto subida exitosamente:', cloudinaryUrl);
+
             const userDocRef = doc(db, 'users', user.uid);
-            await updateDoc(userDocRef, {
-                profileImage: imageUri,
-                updatedAt: new Date().toISOString()
-            });
+            
+            // Verificar si el documento existe
+            const userDoc = await getDoc(userDocRef);
+            
+            if (!userDoc.exists()) {
+                // Si no existe, crearlo con datos básicos
+                await setDoc(userDocRef, {
+                    email: user.email,
+                    firstName: user.displayName?.split(' ')[0] || '',
+                    lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+                    fullName: user.displayName || '',
+                    profileImage: cloudinaryUrl,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                });
+            } else {
+                // Si existe, actualizarlo
+                await updateDoc(userDocRef, {
+                    profileImage: cloudinaryUrl,
+                    updatedAt: new Date().toISOString()
+                });
+            }
 
             Toast.show({
                 type: 'success',
