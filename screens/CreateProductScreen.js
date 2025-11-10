@@ -16,6 +16,7 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../src/config/firebaseConfig';
+import { uploadImageToCloudinary } from '../src/config/cloudinaryHelper';
 import Toast from 'react-native-toast-message';
 
 export default function CrearProductoScreen({ navigation }) {
@@ -243,7 +244,27 @@ export default function CrearProductoScreen({ navigation }) {
     setLoading(true);
 
     try {
-      // Crear objeto producto (sin imagen por ahora)
+      let uploadedImageUrl = null;
+
+      // Si hay una imagen seleccionada, subirla a Cloudinary
+      if (imageUri) {
+        console.log('Subiendo imagen a Cloudinary...');
+        try {
+          uploadedImageUrl = await uploadImageToCloudinary(imageUri, 'products');
+          console.log('Imagen subida exitosamente:', uploadedImageUrl);
+        } catch (uploadError) {
+          console.error('Error subiendo imagen:', uploadError);
+          Toast.show({
+            type: 'error',
+            text1: 'Error al subir imagen',
+            text2: 'No se pudo subir la imagen. Intenta de nuevo.',
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Crear objeto producto con URL de Cloudinary
       const nuevoProducto = {
         name: name.trim(),
         price: parseFloat(price),
@@ -252,7 +273,7 @@ export default function CrearProductoScreen({ navigation }) {
         status,
         category: category || null,
         description: description.trim(),
-        imageUri: imageUri || null, // Guardar URI local por ahora
+        image: uploadedImageUrl, // URL de Cloudinary (antes era imageUri)
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };

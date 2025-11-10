@@ -16,10 +16,11 @@
     import * as ImagePicker from 'expo-image-picker';
     import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
     import { db } from '../src/config/firebaseConfig';
+    import { uploadImageToCloudinary } from '../src/config/cloudinaryHelper';
     import Toast from 'react-native-toast-message';
 
 export default function EditarProductoScreen({ route, navigation }) {
-    const { producto } = route.params;
+  const { producto } = route.params;
 
     const [name, setName] = useState(producto.name || '');
     const [price, setPrice] = useState(producto.price?.toString() || '');
@@ -104,12 +105,12 @@ export default function EditarProductoScreen({ route, navigation }) {
         checkFormValidityAndChanges({ minStock: filteredText });
     };
 
-    const handleSelectImage = async () => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 1,
-        });
+  const handleSelectImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
 
         if (!result.canceled) {
         setImageUri(result.assets[0].uri);
@@ -222,6 +223,26 @@ export default function EditarProductoScreen({ route, navigation }) {
         setLoading(true);
 
         try {
+        let uploadedImageUrl = imageUri;
+
+        // Si la imagen cambió (URI local diferente a la URL de Cloudinary original), subirla
+        if (imageUri && imageUri !== producto.image && !imageUri.startsWith('http')) {
+            console.log('Nueva imagen detectada, subiendo a Cloudinary...');
+            try {
+            uploadedImageUrl = await uploadImageToCloudinary(imageUri, 'products');
+            console.log('Imagen subida exitosamente:', uploadedImageUrl);
+            } catch (uploadError) {
+            console.error('Error subiendo imagen:', uploadError);
+            Toast.show({
+                type: 'error',
+                text1: 'Error al subir imagen',
+                text2: 'No se pudo subir la imagen. Intenta de nuevo.',
+            });
+            setLoading(false);
+            return;
+            }
+        }
+
         const productoActualizado = {
             name: name.trim(),
             price: parseFloat(price),
@@ -230,7 +251,7 @@ export default function EditarProductoScreen({ route, navigation }) {
             status,
             category: category || null,
             description: description.trim(),
-            imageUri: imageUri || null,
+            image: uploadedImageUrl, // URL de Cloudinary (antes era imageUri)
             updatedAt: serverTimestamp(),
         };
 
@@ -332,7 +353,6 @@ export default function EditarProductoScreen({ route, navigation }) {
             maxLength={10}
             />
             {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
-
 
             {/* Stock y Stock Mínimo */}
             <View style={styles.row}>
