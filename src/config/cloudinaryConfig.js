@@ -2,6 +2,7 @@
 export const CLOUDINARY_CONFIG = {
   cloud_name: 'dqlzoeqeh',
   upload_preset: 'almacaninamovil',
+  upload_preset_profiles: 'almacaninamovil_profiles', // Preset para perfiles (si lo creas)
 };
 
 // URL base para uploads

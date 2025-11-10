@@ -223,9 +223,9 @@ export default function PantallaPerfil({ navigation }) {
             if (!user) return;
 
             // Subir imagen a Cloudinary
-            console.log('Subiendo foto de perfil a Cloudinary...');
+            console.log('🖼️ Subiendo foto de perfil a Cloudinary en carpeta: profiles');
             const cloudinaryUrl = await uploadImageToCloudinary(imageUri, 'profiles');
-            console.log('Foto subida exitosamente:', cloudinaryUrl);
+            console.log('✅ Foto de perfil subida exitosamente:', cloudinaryUrl);
 
             const userDocRef = doc(db, 'users', user.uid);
             
