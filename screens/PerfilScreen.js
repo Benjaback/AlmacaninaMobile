@@ -398,9 +398,9 @@ export default function PantallaPerfil({ navigation }) {
                         if (userDoc.exists()) {
                             const userData = userDoc.data();
                             const fullName = userData.fullName || 
-                                             (userData.firstName && userData.lastName ? 
-                                              `${userData.firstName} ${userData.lastName}` : '') || 
-                                             user.displayName || '';
+                                            (userData.firstName && userData.lastName ? 
+                                            `${userData.firstName} ${userData.lastName}` : '') || 
+                                            user.displayName || '';
                             
                             if (userData.profileImage) {
                                 setUserImage(userData.profileImage);
@@ -521,7 +521,7 @@ export default function PantallaPerfil({ navigation }) {
     // esto sirve para los iconos
     const MenuItem = ({ icon, title, subtitle, onPress, iconType = "FontAwesome" }) => {
         const IconComponent = iconType === "MaterialIcons" ? MaterialIcons : 
-                             iconType === "Ionicons" ? Ionicons : FontAwesome;
+                            iconType === "Ionicons" ? Ionicons : FontAwesome;
         return (
             <TouchableOpacity style={styles.menuItem} onPress={onPress}>
                 <View style={styles.menuIconContainer}>
@@ -950,11 +950,11 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: '#f5f5f5',
-      },
-      container: {
+    },
+    container: {
         flex: 1,
-      },
-      
+    },
+    
       // Header styles
       header: {
         alignItems: 'center',
@@ -978,8 +978,8 @@ const styles = StyleSheet.create({
       avatarContainer: {
         position: 'relative',
         marginBottom: 15,
-      },
-      avatar: {
+    },
+    avatar: {
         width: 100,
         height: 100,
         borderRadius: 50,
@@ -988,15 +988,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 3,
         borderColor: '#FFD700',
-      },
+    },
       // estilos modal cambio contraseña
-      modalBackdrop: {
+    modalBackdrop: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
-      },
-      modalContainer: {
+    },
+    modalContainer: {
         width: '90%',
         backgroundColor: '#fff',
         borderRadius: 14,
@@ -1006,30 +1006,30 @@ const styles = StyleSheet.create({
         maxHeight: '80%',
         // ensure inputs expand full width
         alignItems: 'stretch',
-      },
-      modalTitle: {
+    },
+    modalTitle: {
         fontSize: 20,
         fontWeight: '700',
         color: '#8F08AA',
         marginBottom: 8,
         textAlign: 'center',
-      },
-      modalText: {
+    },
+    modalText: {
         fontSize: 14,
         color: '#666',
         marginBottom: 12,
         textAlign: 'center',
-      },
-      inputLabel: {
+    },
+    inputLabel: {
         fontSize: 13,
         color: '#444',
         marginTop: 6,
-      },
-      inputRow: {
+    },
+    inputRow: {
         flexDirection: 'row',
         alignItems: 'center',
-      },
-      inputField: {
+    },
+    inputField: {
         flex: 1,
         borderWidth: 1,
         borderColor: '#e6d9f4',
@@ -1040,22 +1040,22 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         backgroundColor: '#fbf7ff',
         fontSize: 14,
-      },
-      showBtn: {
+    },
+    showBtn: {
         marginLeft: 8,
         padding: 6,
-      },
-      showText: {
+    },
+    showText: {
         color: '#8F08AA',
         fontSize: 12,
-      },
-      modalButtons: {
+    },
+    modalButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginTop: 12,
         width: '100%',
-      },
-      modalButton: {
+    },
+    modalButton: {
         flex: 1,
         paddingVertical: 12,
         borderRadius: 10,
@@ -1066,28 +1066,28 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.12,
         shadowRadius: 4,
-      },
-      modalButtonText: {
+    },
+    modalButtonText: {
         color: '#fff',
         fontWeight: '700',
-      },
-      modalButtonPrimary: {
+    },
+    modalButtonPrimary: {
         backgroundColor: '#8F08AA',
-      },
-      modalButtonSecondary: {
+    },
+    modalButtonSecondary: {
         backgroundColor: '#6c757d',
-      },
-      avatarText: {
+    },
+    avatarText: {
         fontSize: 36,
         fontWeight: 'bold',
         color: '#fff',
-      },
-      avatarImage: {
+    },
+    avatarImage: {
         width: 100,
         height: 100,
         borderRadius: 50,
-      },
-      cameraIcon: {
+    },
+    cameraIcon: {
         position: 'absolute',
         bottom: 5,
         right: 5,
@@ -1097,8 +1097,8 @@ const styles = StyleSheet.create({
         height: 24,
         justifyContent: 'center',
         alignItems: 'center',
-      },
-      userName: {
+    },
+    userName: {
         fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
       },
     
       // Section styles
-      section: {
+    section: {
         backgroundColor: '#fff',
         marginHorizontal: 15,
         marginBottom: 20,
@@ -1126,50 +1126,50 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
-      },
-      sectionTitle: {
+    },
+    sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 10,
-      },
+    },
     
       // Menu item styles
-      menuItem: {
+    menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
-      },
-      menuIconContainer: {
+    },
+    menuIconContainer: {
         width: 40,
         alignItems: 'center',
-      },
-      menuTextContainer: {
+    },
+    menuTextContainer: {
         flex: 1,
         marginLeft: 15,
-      },
-      menuTitle: {
+    },
+    menuTitle: {
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
-      },
-      menuSubtitle: {
+    },
+    menuSubtitle: {
         fontSize: 14,
         color: '#666',
         marginTop: 2,
-      },
+    },
     
       // Logout section
-      logoutSection: {
+    logoutSection: {
         marginHorizontal: 45,
         marginBottom: 20,
-      },
-      logoutButton: {
+    },
+    logoutButton: {
         backgroundColor: '#fff',
         flexDirection: 'row',
         alignItems: 'center',
@@ -1183,52 +1183,52 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         borderWidth: 1,
         borderColor: '#8F08AA',
-      },
-      logoutText: {
+    },
+    logoutText: {
         fontSize: 16,
         fontWeight: '600',
         color: '#000000ff',
         marginLeft: 10,
-      },
-      
+    },
+    
       // Estilos para modal de imagen ampliada
-      imageModalOverlay: {
+    imageModalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',
-      },
-      imageModalContainer: {
+    },
+    imageModalContainer: {
         flex: 1,
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-      },
-      imageModalContent: {
+    },
+    imageModalContent: {
         width: '100%',
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-      },
-      fullImage: {
+    },
+    fullImage: {
         width: '90%',
         height: '70%',
         borderRadius: 20,
-      },
-      imageModalInfo: {
+    },
+    imageModalInfo: {
         position: 'absolute',
         bottom: 80,
         alignItems: 'center',
-      },
-      imageModalTitle: {
+    },
+    imageModalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 5,
-      },
-      imageModalSubtitle: {
+    },
+    imageModalSubtitle: {
         fontSize: 14,
         color: 'rgba(255, 255, 255, 0',
       },

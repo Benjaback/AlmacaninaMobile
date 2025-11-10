@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Image, FlatList, Dimensions, Modal, Pressable, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image, Dimensions, Modal, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -10,10 +10,7 @@ import Toast from 'react-native-toast-message';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import ProductScreen from './ProductScreen';
 import PantallaPerfil from './PerfilScreen';
-import PantallaProveedor from './ProveedorScreen';
-import EmpleadosScreen from './EmpleadosScreen';
 
 // Obtener el ancho de la pantalla para calcular el tamaño de la tarjeta
 const { width } = Dimensions.get('window');
@@ -32,7 +29,7 @@ const COLORS = {
     safeStockGreen: '#4CAF50',
 };
 
-// Datos para el carrusel, parte de servicios
+// Datos para el carrusel de servicios
 const DUMMY_SERVICES = [
     { id: 's1', name: 'Baño y Peluquería', icon: 'cut', color: COLORS.primaryPurple, description: 'Cuidado completo para tu mascota.' },
     { id: 's2', name: 'Corte de Uñas', icon: 'cut-outline', color: COLORS.secondaryYellow, description: 'Mantén sus patitas cómodas y sanas.' },
@@ -40,12 +37,11 @@ const DUMMY_SERVICES = [
     { id: 's4', name: 'Vacunación', icon: 'medkit-outline', color: '#03A9F4', description: 'Calendario de vacunas al día.' },
 ];
 
-// --- 1. MODAL DE CONFIRMACIÓN (CIERRE DE SESIÓN) ---
+// --- MODAL CIERRE DE SESIÓN ---
 const CustomConfirmAlert = ({ isVisible, title, message, onConfirm, onCancel }) => {
     const { primaryPurple, secondaryYellow, textLight, textDark, cardBackground } = COLORS; 
 
     if (!isVisible) return null;
-
     return (
         <Modal
             animationType="fade" 
@@ -59,7 +55,6 @@ const CustomConfirmAlert = ({ isVisible, title, message, onConfirm, onCancel }) 
                     <Text style={alertStyles.modalMessage}>{message}</Text>
 
                     <View style={alertStyles.buttonContainer}>
-                        {/* Botón de Cancelar (Dorado/Amarillo) */}
                         <TouchableOpacity 
                             style={[alertStyles.button, { backgroundColor: secondaryYellow }]}
                             onPress={onCancel}
@@ -69,8 +64,6 @@ const CustomConfirmAlert = ({ isVisible, title, message, onConfirm, onCancel }) 
                                 CANCELAR
                             </Text>
                         </TouchableOpacity>
-
-                        {/* Botón de Confirmar (Morado) */}
                         <TouchableOpacity
                             style={[alertStyles.button, { backgroundColor: primaryPurple }]}
                             onPress={onConfirm}
@@ -87,11 +80,9 @@ const CustomConfirmAlert = ({ isVisible, title, message, onConfirm, onCancel }) 
     );
 };
 
-// --- 2. NUEVO MODAL DE ALERTA SIMPLE (AVISO DE STOCK) ---
+// --- MODAL AVISO DE STOCK ---
 const CustomSimpleAlert = ({ isVisible, title, message, onConfirm, alertType = 'default' }) => {
     const { primaryPurple, lowStockRed, textLight, cardBackground } = COLORS;
-    
-    // Usar Rojo para Stock Bajo, Morado por defecto
     const accentColor = alertType === 'stock' ? lowStockRed : primaryPurple;
     const confirmBg = alertType === 'stock' ? lowStockRed : primaryPurple;
 
@@ -110,7 +101,6 @@ const CustomSimpleAlert = ({ isVisible, title, message, onConfirm, alertType = '
                     <Text style={alertStyles.modalMessage}>{message}</Text>
 
                     <View style={alertStyles.buttonContainer}>
-                        {/* Botón de Confirmar (Ocupa el 100%) */}
                         <TouchableOpacity
                             style={[alertStyles.singleButton, { backgroundColor: confirmBg }]}
                             onPress={onConfirm}
@@ -126,10 +116,8 @@ const CustomSimpleAlert = ({ isVisible, title, message, onConfirm, alertType = '
         </Modal>
     );
 };
-
-
 //Carrusel
-// Tarjeta para mostrar Servicios (sin cambios)
+// Tarjeta para mostrar Servicios
 const ServiceCard = ({ service }) => (
     <View style={[styles.serviceCard, { backgroundColor: service.color, borderColor: COLORS.cardBackground }]}>
         <Ionicons name={service.icon} size={35} color={COLORS.textLight} />
@@ -137,39 +125,63 @@ const ServiceCard = ({ service }) => (
         <Text style={styles.serviceDescription}>{service.description}</Text>
     </View>
 );
-
 // Tarjeta para mostrar Productos con Stock Bajo
-const LowStockCard = ({ product, onPress }) => (
-    <TouchableOpacity 
-        style={styles.lowStockCard} 
-        onPress={onPress}
-    >
-        <Ionicons name="alert-circle" size={30} color={COLORS.lowStockRed} />
-        <Text style={styles.lowStockName}>{product.name}</Text>
-        <View style={styles.stockInfo}>
-            <Text style={styles.stockLabel}>Stock:</Text>
-            <Text style={styles.stockValue}>{product.stock}</Text>
-        </View>
-        <View style={styles.stockInfo}>
-            <Text style={styles.stockLabel}>Mínimo:</Text>
-            <Text style={styles.minValue}>{product.minStock}</Text>
-        </View>
-    </TouchableOpacity>
-);
+const LowStockCard = ({ product, onPress }) => {
+    const missing = Math.max((product.minStock ?? 0) - (product.stock ?? 0), 0);
+    const percent = Math.min(Math.round(((product.stock ?? 0) / Math.max(product.minStock ?? 1, 1)) * 100), 100);
+
+    return (
+        <TouchableOpacity
+            style={styles.lowStockCard}
+            onPress={onPress}
+            activeOpacity={0.9}
+        >
+            <View style={styles.lowStockHeader}>
+                <Ionicons name="pricetag" size={30} color={COLORS.lowStockRed} />
+                <View style={{ marginLeft: 10, flex: 1 }}>
+                    <Text style={styles.lowStockName} numberOfLines={2}>{product.name}</Text>
+                    <Text style={styles.lowStockSubtitle} numberOfLines={1}>
+                        Stock: {product.stock}
+                    </Text>
+                    <View style={styles.progressBarContainer}>
+                        <View
+                            style={[
+                                styles.progressFill,
+                                {
+                                    width: `${percent}%`,
+                                    backgroundColor: missing > 0 ? COLORS.lowStockRed : COLORS.secondaryYellow,
+                                },
+                            ]}
+                        />
+                    </View>
+                    <Text style={styles.levelText}>{percent === 100 ? 'En mínimo' : `Nivel: ${percent}%`}</Text>
+                </View>
+                <View>
+                    <Ionicons name="alert-circle" size={30} color={COLORS.lowStockRed} />
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+};
 
 function Home({ navigation, tabNavigation }) {
     const [userName, setUserName] = useState('');
     const [lowStockProducts, setLowStockProducts] = useState([]);
     const [isLogOutAlertVisible, setIsLogOutAlertVisible] = useState(false);
-    
-    // NUEVOS ESTADOS PARA LA ALERTA DE STOCK BAJO
     const [isStockAlertVisible, setIsStockAlertVisible] = useState(false);
     const [stockAlertMessage, setStockAlertMessage] = useState('');
 
     useEffect(() => {
+        let unsubscribeProducts = null;
+
         const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+            // Limpiar listener anterior si existe
+            if (unsubscribeProducts) {
+                unsubscribeProducts();
+                unsubscribeProducts = null;
+            }
+
             if (user) {
-                // Obtener nombre desde Firestore (Lógica sin cambios)
                 try {
                     const userDocRef = doc(db, 'users', user.uid);
                     const userDoc = await getDoc(userDocRef);
@@ -203,75 +215,90 @@ function Home({ navigation, tabNavigation }) {
                     const formattedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
                     setUserName(formattedName);
                 }
-                
-                // Agregar delay para asegurar que el token de autenticación esté completamente sincronizado
-                setTimeout(async () => {
-                    try {
-                        // Verificar que el usuario siga autenticado
-                        if (!auth.currentUser) {
-                            console.log('Usuario no autenticado después del delay');
-                            return;
-                        }
 
-                        // Obtener token fresco para asegurar permisos
-                        await auth.currentUser.getIdToken(true);
-                        console.log('Token de autenticación verificado correctamente');
+                // Configurar listener de productos solo si el usuario está autenticado
+                try {
+                    // Verificar que el usuario sigue autenticado
+                    if (!auth.currentUser) {
+                        console.log('Usuario no autenticado, saltando consulta de productos');
+                        return;
+                    }
 
-                        // Suscripción a productos de bajo stock
-                        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-                        const unsubscribeProducts = onSnapshot(
-                            q,
-                            (querySnapshot) => {
-                                console.log('Consulta exitosa, productos encontrados:', querySnapshot.size);
-                                const lowStockItems = [];
-                                querySnapshot.forEach((d) => {
-                                    const data = d.data();
-                                    const currentStock = data.stock ?? 0;
-                                    const minThreshold = data.minStock ? parseInt(data.minStock) : 5;
+                    console.log('Configurando listener de productos para usuario autenticado');
+                    
+                    // Suscripción a productos de bajo stock
+                    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+                    unsubscribeProducts = onSnapshot(
+                        q,
+                        (querySnapshot) => {
+                            console.log('Consulta exitosa, productos encontrados:', querySnapshot.size);
+                            const lowStockItems = [];
+                            querySnapshot.forEach((d) => {
+                                const data = d.data();
+                                const currentStock = data.stock ?? 0;
+                                const minThreshold = data.minStock ? parseInt(data.minStock) : 5;
 
-                                    if (currentStock <= minThreshold) {
-                                        lowStockItems.push({
-                                            id: d.id,
-                                            name: data.name || 'Producto Desconocido',
-                                            stock: currentStock,
-                                            minStock: minThreshold,
-                                        });
-                                    }
-                                });
-                                setLowStockProducts(lowStockItems);
-                            },
-                            (error) => {
-                                console.error('Error fetching low stock products:', error);
-                                console.error('Código de error:', error.code);
-                                console.error('Mensaje:', error.message);
-                                
-                                // Si es error de permisos, intentar reautenticar
-                                if (error.code === 'permission-denied') {
-                                    console.log('Error de permisos - reintentando autenticación...');
-                                    // Forzar reautenticación
-                                    auth.currentUser?.getIdToken(true).then(() => {
-                                        console.log('Token renovado exitosamente');
-                                    }).catch(err => {
-                                        console.error('Error renovando token:', err);
+                                if (currentStock <= minThreshold) {
+                                    lowStockItems.push({
+                                        id: d.id,
+                                        name: data.name || 'Producto Desconocido',
+                                        stock: currentStock,
+                                        minStock: minThreshold,
+                                        urgency: minThreshold - currentStock,
                                     });
                                 }
-                                setLowStockProducts([]);
+                            });
+                            // Ordenar por urgencia
+                            lowStockItems.sort((a, b) => {
+                                if (b.urgency !== a.urgency) return b.urgency - a.urgency;
+                                return a.stock - b.stock;
+                            });
+
+                            setLowStockProducts(lowStockItems);
+                        },
+                        (error) => {
+                            console.error('Error fetching low stock products:', error);
+                            console.error('Código de error:', error.code);
+                            console.error('Mensaje:', error.message);
+                            
+                            // Manejar diferentes tipos de errores
+                            if (error.code === 'permission-denied') {
+                                console.log('Error de permisos - verificar reglas de Firestore');
+                                Toast.show({
+                                    type: 'error',
+                                    text1: 'Error de permisos',
+                                    text2: 'No se pueden cargar los productos',
+                                    visibilityTime: 3000,
+                                });
+                            } else if (error.code === 'unavailable') {
+                                console.log('Firestore no disponible - modo offline');
+                                Toast.show({
+                                    type: 'info',
+                                    text1: 'Modo offline',
+                                    text2: 'Algunos datos pueden no estar actualizados',
+                                    visibilityTime: 3000,
+                                });
                             }
-                        );
-                        
-                        return unsubscribeProducts;
-                    } catch (error) {
-                        console.error('Error en inicialización de consulta de productos:', error);
-                    }
-                }, 1500);
+                            
+                            setLowStockProducts([]);
+                        }
+                    );
+                } catch (error) {
+                    console.error('Error configurando listener de productos:', error);
+                }
             } else {
+                // Usuario no autenticado - limpiar datos
                 setUserName('');
                 setLowStockProducts([]);
             }
         });
 
         return () => {
+            // Limpiar ambos listeners
             unsubscribeAuth();
+            if (unsubscribeProducts) {
+                unsubscribeProducts();
+            }
         };
     }, []);
 
@@ -298,7 +325,7 @@ function Home({ navigation, tabNavigation }) {
     
     // --- FUNCIÓN MODIFICADA PARA USAR EL MODAL PERSONALIZADO ---
     const handleShowStockAlert = (productName) => {
-        setStockAlertMessage(`El producto "${productName}" necesita ser reabastecido. Por favor, revisa el pedido.`);
+        setStockAlertMessage(`El producto "${productName}" necesita ser reabastecido. Por favor, revisar "Productos".`);
         setIsStockAlertVisible(true);
     };
 
@@ -399,7 +426,7 @@ function Home({ navigation, tabNavigation }) {
                             </View>
 
                             <View style={styles.carouselContainer}>
-                                <Text style={styles.sectionTitle}>⚠️ Stock Bajo ({lowStockProducts.length})</Text>
+                                <Text style={styles.sectionTitle}> Stock Bajo ({lowStockProducts.length})</Text>
                                 
                                 {lowStockProducts.length > 0 ? (
                                     <FlatList
@@ -428,7 +455,7 @@ function Home({ navigation, tabNavigation }) {
                     </ScrollView>
                 </View>
                 
-                {/* MODAL 1: Cierre de sesión (Confirmación) */}
+                {/* MODAL Cierre de sesión (Confirmación) */}
                 <CustomConfirmAlert
                     isVisible={isLogOutAlertVisible}
                     title="¿Salir de tu Cuenta?"
@@ -437,7 +464,7 @@ function Home({ navigation, tabNavigation }) {
                     onCancel={handleCancelLogOut}
                 />
 
-                {/* MODAL 2: Aviso de Stock Bajo (Alerta simple) */}
+                {/* MODAL Aviso de Stock Bajo (Alerta simple) */}
                 <CustomSimpleAlert
                     isVisible={isStockAlertVisible}
                     title="¡Aviso de Reabastecimiento!"
@@ -639,13 +666,11 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '700',
     },
-
     content: {
         flex: 1,
         padding: 20,
     },
-
-    // --- TARJETA DE BIENVENIDA MEJORADA ---
+    // --- TARJETA DE BIENVENIDA ---
     welcomeCard: {
         backgroundColor: COLORS.secondaryYellow,
         borderRadius: 15,
@@ -683,7 +708,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.textDark,
     },
-
     // --- BOTONES DE MENÚ MEJORADOS (GRID) ---
     menuGrid: {
         flexDirection: 'row',
@@ -725,7 +749,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: COLORS.textDark,
     },
-
     // --- ESTILOS DE CARRUSEL ---
     carouselContainer: {
         marginBottom: 25,
@@ -762,7 +785,6 @@ const styles = StyleSheet.create({
         color: COLORS.textLight,
         opacity: 0.8,
     },
-
     // --- LOW STOCK CARD STYLES ---
     lowStockCard: {
         width: ITEM_WIDTH,
@@ -786,26 +808,31 @@ const styles = StyleSheet.create({
         color: COLORS.textDark,
         marginTop: 5,
     },
-    stockInfo: {
+    lowStockHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    lowStockSubtitle: {
+        fontSize: 12,
+        color: '#666',
         marginTop: 2,
     },
-    stockLabel: {
-        fontSize: 12,
-        color: COLORS.textDark,
-        fontWeight: '500',
+    progressBarContainer: {
+        width: '100%',
+        height: 10,
+        backgroundColor: '#EFEFEF',
+        borderRadius: 6,
+        overflow: 'hidden',
+        marginTop: 10,
     },
-    stockValue: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: COLORS.lowStockRed,
+    progressFill: {
+        height: '100%',
+        borderRadius: 6,
     },
-    minValue: {
-        fontSize: 12,
-        fontWeight: '900',
-        color: COLORS.textDark,
+    levelText: {
+        fontSize: 11,
+        color: '#666',
+        marginTop: 6,
     },
     safeStockMessage: {
         flexDirection: 'row',
