@@ -153,7 +153,9 @@ const DataField = React.memo(({ icon, label, value, iconType = "FontAwesome", is
       ) : (
         <View style={styles.valueContainer}>
           <Text style={[styles.fieldValue, !isEditable && styles.readOnlyValue]}>
-            {prefix && value ? `${prefix} ${value}` : value || 'No especificado'}
+            {prefix && value ? 
+              (value.startsWith(prefix) ? value : `${prefix} ${value}`) : 
+              value || 'No especificado'}
           </Text>
           {!isEditable && (
             <View style={styles.readOnlyBadge}>
@@ -510,7 +512,8 @@ export default function EditarPerfilScreen({ navigation }) {
           firstName: editFirstName.trim(),
           lastName: editLastName.trim(),
           dni: editDni.trim(),
-          phone: editPhone.trim() ? `+54 ${editPhone.trim()}` : '', // Agregar +54 al teléfono
+          phone: editPhone.trim() ? 
+            (editPhone.trim().startsWith('+54') ? editPhone.trim() : `+54 ${editPhone.trim()}`) : '', // Evitar duplicar +54
           fullName: `${editFirstName.trim()} ${editLastName.trim()}`,
           updatedAt: new Date().toISOString()
         };

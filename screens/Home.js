@@ -204,35 +204,66 @@ function Home({ navigation, tabNavigation }) {
                     setUserName(formattedName);
                 }
                 
-                // Suscripción a productos de bajo stock (Lógica sin cambios)
-                const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
-                const unsubscribeProducts = onSnapshot(
-                    q,
-                    (querySnapshot) => {
-                        const lowStockItems = [];
-                        querySnapshot.forEach((d) => {
-                            const data = d.data();
-                            const currentStock = data.stock ?? 0;
-                            const minThreshold = data.minStock ? parseInt(data.minStock) : 5;
+                // Agregar delay para asegurar que el token de autenticación esté completamente sincronizado
+                setTimeout(async () => {
+                    try {
+                        // Verificar que el usuario siga autenticado
+                        if (!auth.currentUser) {
+                            console.log('Usuario no autenticado después del delay');
+                            return;
+                        }
 
-                            if (currentStock <= minThreshold) {
-                                lowStockItems.push({
-                                    id: d.id,
-                                    name: data.name || 'Producto Desconocido',
-                                    stock: currentStock,
-                                    minStock: minThreshold,
+                        // Obtener token fresco para asegurar permisos
+                        await auth.currentUser.getIdToken(true);
+                        console.log('Token de autenticación verificado correctamente');
+
+                        // Suscripción a productos de bajo stock
+                        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+                        const unsubscribeProducts = onSnapshot(
+                            q,
+                            (querySnapshot) => {
+                                console.log('Consulta exitosa, productos encontrados:', querySnapshot.size);
+                                const lowStockItems = [];
+                                querySnapshot.forEach((d) => {
+                                    const data = d.data();
+                                    const currentStock = data.stock ?? 0;
+                                    const minThreshold = data.minStock ? parseInt(data.minStock) : 5;
+
+                                    if (currentStock <= minThreshold) {
+                                        lowStockItems.push({
+                                            id: d.id,
+                                            name: data.name || 'Producto Desconocido',
+                                            stock: currentStock,
+                                            minStock: minThreshold,
+                                        });
+                                    }
                                 });
+                                setLowStockProducts(lowStockItems);
+                            },
+                            (error) => {
+                                console.error('Error fetching low stock products:', error);
+                                console.error('Código de error:', error.code);
+                                console.error('Mensaje:', error.message);
+                                
+                                // Si es error de permisos, intentar reautenticar
+                                if (error.code === 'permission-denied') {
+                                    console.log('Error de permisos - reintentando autenticación...');
+                                    // Forzar reautenticación
+                                    auth.currentUser?.getIdToken(true).then(() => {
+                                        console.log('Token renovado exitosamente');
+                                    }).catch(err => {
+                                        console.error('Error renovando token:', err);
+                                    });
+                                }
+                                setLowStockProducts([]);
                             }
-                        });
-                        setLowStockProducts(lowStockItems);
-                    },
-                    (error) => {
-                        console.error('Error fetching low stock products:', error);
-                        setLowStockProducts([]);
+                        );
+                        
+                        return unsubscribeProducts;
+                    } catch (error) {
+                        console.error('Error en inicialización de consulta de productos:', error);
                     }
-                );
-                
-                return unsubscribeProducts;
+                }, 1500); // Esperar 1.5 segundos para asegurar sincronización
             } else {
                 setUserName('');
                 setLowStockProducts([]);
